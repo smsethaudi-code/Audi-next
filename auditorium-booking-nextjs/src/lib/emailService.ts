@@ -31,14 +31,14 @@ class EmailService {
   private transporter: nodemailer.Transporter
 
   constructor() {
-    // Configure email transporter (you'll need to update these with actual SMTP settings)
+    // Configure email transporter using environment variables
     const config: EmailConfig = {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: process.env.EMAIL_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER || 'your-email@gmail.com',
-        pass: process.env.SMTP_PASS || 'your-app-password'
+        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+        pass: process.env.EMAIL_PASS || 'your-app-password'
       }
     }
 
@@ -104,11 +104,9 @@ class EmailService {
             }
             
             .logo {
-                width: 80px;
-                height: 80px;
-                border-radius: 50%;
                 margin-bottom: 15px;
-                border: 3px solid rgba(255,255,255,0.3);
+                max-width: 100%;
+                height: auto;
             }
             
             .header h1 {
@@ -385,9 +383,9 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: 'smsethaudi@poornima.org',
-        subject: `New Internal Booking Request - ${data.eventName}`,
+        subject: `New Internal Booking Request - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 
@@ -441,10 +439,10 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
-        subject: `Booking Request Received - ${data.eventName}`,
+        subject: `Booking Request Received - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 
@@ -516,10 +514,10 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
-        subject: `Booking Partially Approved - ${data.eventName}`,
+        subject: `Booking Partially Approved - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 
@@ -596,10 +594,10 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
-        subject: `Booking Approved - ${data.eventName}`,
+        subject: `Booking Approved - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 
@@ -677,10 +675,10 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
-        subject: `Booking Cancelled - ${data.eventName}`,
+        subject: `Booking Cancelled - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 
@@ -762,10 +760,10 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
-        subject: `Booking Cancellation Confirmed - ${data.eventName}`,
+        subject: `Booking Cancellation Confirmed - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 
@@ -834,10 +832,10 @@ class EmailService {
       `
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@poornima.org',
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
-        subject: `Booking Approved - ${data.eventName}`,
+        subject: `Booking Approved - Dr. SM Seth Auditorium`,
         html: this.getEmailTemplate(content)
       })
 

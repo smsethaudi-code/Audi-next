@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import {
   Container,
-  Grid,
   Card,
   CardContent,
   Typography,
@@ -847,11 +846,11 @@ export default function AdminDashboard() {
                   <Typography variant="body2" color="textSecondary">End Time</Typography>
                   <Typography variant="body1">{formatDate(actionDialog.booking.endTime)}</Typography>
                 </Box>
-                <Grid size={{ xs: 12 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Description</Typography>
                   <Typography variant="body1">{actionDialog.booking.eventDescription}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Status</Typography>
                   <Chip 
                     label={actionDialog.booking.status} 
@@ -865,38 +864,38 @@ export default function AdminDashboard() {
                     size="small"
                   />
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Created At</Typography>
                   <Typography variant="body1">{formatDate(actionDialog.booking.createdAt)}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Institute Name</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).instituteName || 'N/A'}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Coordinator Phone</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).coordinatorPhone || 'N/A'}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Extra Time Before (mins)</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).extraTimePre || 0}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Extra Time After (mins)</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).extraTimePost || 0}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">External Event</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).isExternal ? 'Yes' : 'No'}</Typography>
                 </Box>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Total Cost</Typography>
                   <Typography variant="body1">₹{(actionDialog.booking as any).totalCost || 0}</Typography>
                 </Box>
                 
                 {/* External Services */}
                 {(actionDialog.booking as any).externalServices && (
-                  <Grid size={{ xs: 12 }}>
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="textSecondary" gutterBottom>External Services</Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {(actionDialog.booking as any).externalServices.refreshments && (
@@ -917,7 +916,7 @@ export default function AdminDashboard() {
 
                 {/* Approval Details */}
                 {actionDialog.booking.status === 'APPROVED' && (actionDialog.booking as any).approvedAt && (
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="textSecondary">Approved At</Typography>
                     <Typography variant="body1">{formatDate((actionDialog.booking as any).approvedAt)}</Typography>
                   </Box>
@@ -925,7 +924,7 @@ export default function AdminDashboard() {
                 
                 {/* Rejection Details */}
                 {actionDialog.booking.status === 'REJECTED' && actionDialog.booking.rejectionReason && (
-                  <Grid size={{ xs: 12 }}>
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="textSecondary">Rejection Reason</Typography>
                     <Typography variant="body1" color="error">{actionDialog.booking.rejectionReason}</Typography>
                   </Box>
@@ -933,14 +932,14 @@ export default function AdminDashboard() {
 
                 {/* Cancellation Details */}
                 {actionDialog.booking.status === 'CANCELLED' && actionDialog.booking.rejectionReason && (
-                  <Grid size={{ xs: 12 }}>
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="textSecondary">Cancellation Reason</Typography>
                     <Typography variant="body1" color="error">{actionDialog.booking.rejectionReason}</Typography>
                   </Box>
                 )}
 
                 {actionDialog.booking.specialRequirements && (
-                  <Grid size={{ xs: 12 }}>
+                  <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="textSecondary">Special Requirements</Typography>
                     <Typography variant="body1">{actionDialog.booking.specialRequirements}</Typography>
                   </Box>
@@ -1017,35 +1016,38 @@ export default function AdminDashboard() {
       <Dialog open={blockTimeDialog} onClose={() => setBlockTimeDialog(false)}>
         <DialogTitle>Block Time Slot</DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                type="datetime-local"
-                label="Start Time"
-                value={blockTimeData.startTime}
-                onChange={(e) => setBlockTimeData({ ...blockTimeData, startTime: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                type="datetime-local"
-                label="End Time"
-                value={blockTimeData.endTime}
-                onChange={(e) => setBlockTimeData({ ...blockTimeData, endTime: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Reason for Blocking"
-                value={blockTimeData.reason}
-                onChange={(e) => setBlockTimeData({ ...blockTimeData, reason: e.target.value })}
-              />
-            </Box>
+          <Box 
+            sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+              gap: 2, 
+              mt: 1 
+            }}
+          >
+            <TextField
+              fullWidth
+              type="datetime-local"
+              label="Start Time"
+              value={blockTimeData.startTime}
+              onChange={(e) => setBlockTimeData({ ...blockTimeData, startTime: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              type="datetime-local"
+              label="End Time"
+              value={blockTimeData.endTime}
+              onChange={(e) => setBlockTimeData({ ...blockTimeData, endTime: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Box>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Reason for Blocking"
+              value={blockTimeData.reason}
+              onChange={(e) => setBlockTimeData({ ...blockTimeData, reason: e.target.value })}
+            />
           </Box>
         </DialogContent>
         <DialogActions>
