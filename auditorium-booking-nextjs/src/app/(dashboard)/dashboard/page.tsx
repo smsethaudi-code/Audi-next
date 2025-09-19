@@ -36,6 +36,7 @@ import {
   FormGroup,
   Stack
 } from '@mui/material'
+import QRCodeDisplay from '@/components/ui/QRCodeDisplay'
 import {
   Add as AddIcon,
   Event as EventIcon,
@@ -260,7 +261,7 @@ export default function DashboardPage() {
               const conflictDetails = error.conflicts?.length > 0 
                 ? ` (Conflict with: ${error.conflicts[0].eventName})` 
                 : ''
-              setFormError(`⚠️ Time slot not available - conflicts with existing booking${conflictDetails}`)
+              setFormError(`⚠️ Time slot not available - conflicts with existing booking`)
             } else if (error.error.includes('blocked by administrator')) {
               setFormError('🚫 Time slot not available - blocked by administrator')
             } else if (error.error.includes('conflicts with existing booking')) {
@@ -693,6 +694,7 @@ export default function DashboardPage() {
                       <TableCell>Date & Time</TableCell>
                       <TableCell>Participants</TableCell>
                       <TableCell>Status</TableCell>
+                      <TableCell>QR Code</TableCell>
                       <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -725,6 +727,18 @@ export default function DashboardPage() {
                             <Typography variant="caption" display="block" color="error">
                               Reason: {booking.rejectionReason}
                             </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {booking.status === 'APPROVED' && (
+                            <QRCodeDisplay
+                              bookingId={booking._id}
+                              eventName={booking.eventName}
+                              startTime={booking.startTime}
+                              endTime={booking.endTime}
+                              eventType={booking.eventType}
+                              participantCount={booking.participantCount}
+                            />
                           )}
                         </TableCell>
                         <TableCell>

@@ -5,6 +5,7 @@ import connectDB from '@/lib/db'
 import Booking from '@/models/Booking'
 import BlockedTimeSlot from '@/models/BlockedTimeSlot'
 import { isValidTimeSlot } from '@/lib/utils'
+import EmailService from '@/lib/emailService'
 
 export async function GET(request: NextRequest) {
   try {
@@ -200,6 +201,35 @@ export async function POST(request: NextRequest) {
     })
 
     const savedBooking = await newBooking.save()
+
+    // Send email notification
+    try {
+      const emailService = new EmailService()
+      const emailData = {
+        bookingId: savedBooking._id.toString(),
+        eventName: savedBooking.eventName,
+        eventType: savedBooking.eventType,
+        userName: savedBooking.userName,
+        userEmail: savedBooking.userEmail,
+        startTime: savedBooking.startTime.toISOString(),
+        endTime: savedBooking.endTime.toISOString(),
+        participantCount: savedBooking.participantCount,
+        eventDescription: savedBooking.eventDescription,
+        isExternal: savedBooking.isExternal,
+        externalServices: Object.entries(savedBooking.externalServices || {})
+          .filter(([_, value]) => value)
+          .map(([key, _]) => key)
+      }
+      
+      if (Boolean(isExternal)) {
+        await emailService.sendExternalBookingReceived(emailData)
+      } else {
+        await emailService.sendInternalBookingReceived(emailData)
+      }
+    } catch (emailError) {
+      console.error('Email notification error:', emailError)
+      // Don't fail the booking creation if email fails
+    }
 
     return NextResponse.json({
       message: 'Booking created successfully',

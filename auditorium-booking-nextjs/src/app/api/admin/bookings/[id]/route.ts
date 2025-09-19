@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import connectDB from '@/lib/db'
 import Booking from '@/models/Booking'
+import EmailService from '@/lib/emailService'
 
 export async function PATCH(
   request: NextRequest,
@@ -156,6 +157,48 @@ export async function PATCH(
     }
 
     await booking.save()
+
+    // Send email notification based on action
+    try {
+      const emailService = new EmailService()
+      const emailData = {
+        bookingId: booking._id.toString(),
+        eventName: booking.eventName,
+        eventType: booking.eventType,
+        userName: booking.userName,
+        userEmail: booking.userEmail,
+        startTime: booking.startTime.toISOString(),
+        endTime: booking.endTime.toISOString(),
+        participantCount: booking.participantCount,
+        eventDescription: booking.eventDescription,
+        isExternal: booking.isExternal,
+        externalServices: Object.entries(booking.externalServices || {})
+          .filter(([_, value]) => value)
+          .map(([key, _]) => key),
+        rejectionReason,
+        cancellationReason
+      }
+      
+      switch (action) {
+        case 'approve':
+          if (booking.isExternal) {
+            await emailService.sendExternalApproved(emailData)
+          } else {
+            await emailService.sendInternalApproved(emailData)
+          }
+          break
+        case 'partial-approve':
+          await emailService.sendExternalPartiallyApproved(emailData)
+          break
+        case 'reject':
+        case 'cancel':
+          await emailService.sendAdminCancelled(emailData)
+          break
+      }
+    } catch (emailError) {
+      console.error('Email notification error:', emailError)
+      // Don't fail the booking update if email fails
+    }
 
     return NextResponse.json({ 
       success: true, 

@@ -11,11 +11,13 @@ export interface IBooking extends Document {
   userName: string
   userEmail: string
   userId: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'PARTIALLY_APPROVED'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'PARTIALLY_APPROVED' | 'VERIFIED'
   approvedBy?: string
   approvedAt?: Date
   rejectionReason?: string
   verificationCode?: string
+  verifiedBy?: string
+  verifiedAt?: Date
   participantCount: number
   specialRequirements?: string
   instituteName: string
@@ -115,7 +117,7 @@ const BookingSchema = new Schema<IBooking>(
     },
     status: {
       type: String,
-      enum: ['PENDING', 'PARTIALLY_APPROVED', 'APPROVED', 'REJECTED', 'CANCELLED'],
+      enum: ['PENDING', 'PARTIALLY_APPROVED', 'APPROVED', 'REJECTED', 'CANCELLED', 'VERIFIED'],
       default: 'PENDING',
     },
     externalServices: {
@@ -142,6 +144,14 @@ const BookingSchema = new Schema<IBooking>(
     },
     verificationCode: {
       type: String,
+      default: null,
+    },
+    verifiedBy: {
+      type: String,
+      default: null,
+    },
+    verifiedAt: {
+      type: Date,
       default: null,
     },
     userId: {

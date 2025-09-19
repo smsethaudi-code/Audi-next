@@ -5,6 +5,7 @@ import connectDB from '@/lib/db'
 import Booking, { IBooking } from '@/models/Booking'
 import { canApproveBooking } from '@/lib/auth'
 import { generateVerificationCode } from '@/lib/utils'
+import EmailService from '@/lib/emailService'
 
 export async function GET(
   request: NextRequest,
@@ -192,6 +193,33 @@ export async function PATCH(
     }
 
     const updatedBooking = await booking.save()
+
+    // Send email notification for user cancellation
+    if (status === 'CANCELLED') {
+      try {
+        const emailService = new EmailService()
+        const emailData = {
+          bookingId: booking._id.toString(),
+          eventName: booking.eventName,
+          eventType: booking.eventType,
+          userName: booking.userName,
+          userEmail: booking.userEmail,
+          startTime: booking.startTime.toISOString(),
+          endTime: booking.endTime.toISOString(),
+          participantCount: booking.participantCount,
+          eventDescription: booking.eventDescription,
+          isExternal: booking.isExternal,
+          externalServices: Object.entries(booking.externalServices || {})
+            .filter(([_, value]) => value)
+            .map(([key, _]) => key)
+        }
+        
+        await emailService.sendUserCancelled(emailData)
+      } catch (emailError) {
+        console.error('Email notification error:', emailError)
+        // Don't fail the booking update if email fails
+      }
+    }
 
     return NextResponse.json({
       message: 'Booking updated successfully',

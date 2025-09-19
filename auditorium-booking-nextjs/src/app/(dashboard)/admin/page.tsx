@@ -41,10 +41,12 @@ import {
   Block as BlockIcon,
   History as HistoryIcon,
   Event as EventIcon,
-  Pending as PendingIcon
+  Pending as PendingIcon,
+  QrCodeScanner as QrIcon
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import QRVerification from '@/components/features/admin/QRVerification'
 
 interface Booking {
   _id: string
@@ -108,6 +110,7 @@ export default function AdminDashboard() {
   const [rejectionReason, setRejectionReason] = useState('')
   const [cancellationReason, setCancellationReason] = useState('')
   const [blockTimeDialog, setBlockTimeDialog] = useState(false)
+  const [qrVerificationOpen, setQrVerificationOpen] = useState(false)
   const [blockTimeData, setBlockTimeData] = useState({
     startTime: '',
     endTime: '',
@@ -279,9 +282,30 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleQRVerificationSuccess = async (bookingId: string, verificationData: any) => {
+    try {
+      // Update local booking state
+      setBookings(prev => prev.map(booking => 
+        booking._id === bookingId 
+          ? { ...booking, status: 'VERIFIED', verifiedAt: new Date().toISOString() }
+          : booking
+      ))
+      
+      // Refresh bookings from server
+      await fetchBookings()
+      
+      // Show success message (you could add a toast notification here)
+      console.log('Booking verified successfully:', verificationData)
+      
+    } catch (error) {
+      console.error('Error updating booking status:', error)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'APPROVED': return 'success'
+      case 'VERIFIED': return 'info'
       case 'PENDING': return 'warning'
       case 'REJECTED': return 'error'
       case 'CANCELLED': return 'default'
@@ -355,8 +379,19 @@ export default function AdminDashboard() {
       </Box>
 
       {/* Stats Cards */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={2.4}>
+      <Box 
+        sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { 
+            xs: '1fr', 
+            sm: '1fr 1fr', 
+            md: 'repeat(5, 1fr)' 
+          }, 
+          gap: 3, 
+          mb: 4 
+        }}
+      >
+        <Box>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
@@ -370,9 +405,9 @@ export default function AdminDashboard() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Box>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
@@ -386,9 +421,9 @@ export default function AdminDashboard() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Box>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
@@ -402,9 +437,9 @@ export default function AdminDashboard() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Box>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
@@ -418,9 +453,9 @@ export default function AdminDashboard() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} sm={6} md={2.4}>
+        <Box>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center">
@@ -434,8 +469,8 @@ export default function AdminDashboard() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Action Buttons */}
       <Box mb={3}>
@@ -446,6 +481,14 @@ export default function AdminDashboard() {
           sx={{ mr: 2 }}
         >
           Block Time Slot
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<QrIcon />}
+          onClick={() => setQrVerificationOpen(true)}
+          color="primary"
+        >
+          Verify QR Code
         </Button>
       </Box>
 
@@ -773,35 +816,41 @@ export default function AdminDashboard() {
               <Typography variant="h6" gutterBottom>
                 {actionDialog.booking.eventName}
               </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+              <Box 
+                sx={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+                  gap: 2 
+                }}
+              >
+                <Box>
                   <Typography variant="body2" color="textSecondary">Event Type</Typography>
                   <Typography variant="body1">{actionDialog.booking.eventType}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Organizer</Typography>
                   <Typography variant="body1">{actionDialog.booking.userName}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Email</Typography>
                   <Typography variant="body1">{actionDialog.booking.userEmail}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Participants</Typography>
                   <Typography variant="body1">{actionDialog.booking.participantCount}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="textSecondary">Start Time</Typography>
                   <Typography variant="body1">{formatDate(actionDialog.booking.startTime)}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="textSecondary">End Time</Typography>
                   <Typography variant="body1">{formatDate(actionDialog.booking.endTime)}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12 }}>
                   <Typography variant="body2" color="textSecondary">Description</Typography>
                   <Typography variant="body1">{actionDialog.booking.eventDescription}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Status</Typography>
                   <Chip 
@@ -815,35 +864,35 @@ export default function AdminDashboard() {
                     }
                     size="small"
                   />
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Created At</Typography>
                   <Typography variant="body1">{formatDate(actionDialog.booking.createdAt)}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Institute Name</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).instituteName || 'N/A'}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Coordinator Phone</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).coordinatorPhone || 'N/A'}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Extra Time Before (mins)</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).extraTimePre || 0}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Extra Time After (mins)</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).extraTimePost || 0}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">External Event</Typography>
                   <Typography variant="body1">{(actionDialog.booking as any).isExternal ? 'Yes' : 'No'}</Typography>
-                </Grid>
+                </Box>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="textSecondary">Total Cost</Typography>
                   <Typography variant="body1">₹{(actionDialog.booking as any).totalCost || 0}</Typography>
-                </Grid>
+                </Box>
                 
                 {/* External Services */}
                 {(actionDialog.booking as any).externalServices && (
@@ -863,7 +912,7 @@ export default function AdminDashboard() {
                         <Chip label="Media/Photo Coverage" size="small" color="primary" />
                       )}
                     </Box>
-                  </Grid>
+                  </Box>
                 )}
 
                 {/* Approval Details */}
@@ -871,7 +920,7 @@ export default function AdminDashboard() {
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="body2" color="textSecondary">Approved At</Typography>
                     <Typography variant="body1">{formatDate((actionDialog.booking as any).approvedAt)}</Typography>
-                  </Grid>
+                  </Box>
                 )}
                 
                 {/* Rejection Details */}
@@ -879,7 +928,7 @@ export default function AdminDashboard() {
                   <Grid size={{ xs: 12 }}>
                     <Typography variant="body2" color="textSecondary">Rejection Reason</Typography>
                     <Typography variant="body1" color="error">{actionDialog.booking.rejectionReason}</Typography>
-                  </Grid>
+                  </Box>
                 )}
 
                 {/* Cancellation Details */}
@@ -887,16 +936,16 @@ export default function AdminDashboard() {
                   <Grid size={{ xs: 12 }}>
                     <Typography variant="body2" color="textSecondary">Cancellation Reason</Typography>
                     <Typography variant="body1" color="error">{actionDialog.booking.rejectionReason}</Typography>
-                  </Grid>
+                  </Box>
                 )}
 
                 {actionDialog.booking.specialRequirements && (
                   <Grid size={{ xs: 12 }}>
                     <Typography variant="body2" color="textSecondary">Special Requirements</Typography>
                     <Typography variant="body1">{actionDialog.booking.specialRequirements}</Typography>
-                  </Grid>
+                  </Box>
                 )}
-              </Grid>
+              </Box>
 
               {actionDialog.type === 'reject' && (
                 <TextField
@@ -978,7 +1027,7 @@ export default function AdminDashboard() {
                 onChange={(e) => setBlockTimeData({ ...blockTimeData, startTime: e.target.value })}
                 InputLabelProps={{ shrink: true }}
               />
-            </Grid>
+            </Box>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -988,7 +1037,7 @@ export default function AdminDashboard() {
                 onChange={(e) => setBlockTimeData({ ...blockTimeData, endTime: e.target.value })}
                 InputLabelProps={{ shrink: true }}
               />
-            </Grid>
+            </Box>
             <Grid size={{ xs: 12 }}>
               <TextField
                 fullWidth
@@ -996,8 +1045,8 @@ export default function AdminDashboard() {
                 value={blockTimeData.reason}
                 onChange={(e) => setBlockTimeData({ ...blockTimeData, reason: e.target.value })}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBlockTimeDialog(false)}>Cancel</Button>
@@ -1006,6 +1055,13 @@ export default function AdminDashboard() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* QR Verification Dialog */}
+      <QRVerification
+        open={qrVerificationOpen}
+        onClose={() => setQrVerificationOpen(false)}
+        onVerificationSuccess={handleQRVerificationSuccess}
+      />
     </Container>
   )
 }
