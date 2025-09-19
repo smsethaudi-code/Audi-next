@@ -1,0 +1,45 @@
+{
+  "name": "auditorium-booking-nextjs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@auth/mongodb-adapter": "^3.10.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "@mui/x-date-pickers": "^8.11.3",
+    "@tanstack/react-query": "^5.89.0",
+    "@types/nodemailer": "^7.0.1",
+    "@types/qrcode": "^1.5.5",
+    "axios": "^1.12.2",
+    "date-fns": "^4.1.0",
+    "moment": "^2.30.1",
+    "mongoose": "^8.18.1",
+    "next": "15.5.3",
+    "next-auth": "^4.24.11",
+    "nodemailer": "^6.10.1",
+    "qrcode": "^1.5.4",
+    "react": "19.1.0",
+    "react-big-calendar": "^1.19.4",
+    "react-dom": "19.1.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.3",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
