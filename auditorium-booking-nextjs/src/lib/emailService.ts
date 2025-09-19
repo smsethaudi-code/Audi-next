@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import * as QRCode from 'qrcode'
 
 interface BookingEmailData {
   bookingId: string
@@ -65,6 +66,35 @@ class EmailService {
     const start = new Date(startTime)
     const end = new Date(endTime)
     return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60))
+  }
+
+  private async generateQRCode(data: BookingEmailData): Promise<Buffer> {
+    // Generate verification code (same logic as in QRCodeDisplay component)
+    const verificationCode = `${data.bookingId}-${data.eventName}-${new Date(data.startTime).getTime()}`
+    const verificationHash = Buffer.from(verificationCode).toString('base64')
+
+    const qrData = JSON.stringify({
+      bookingId: data.bookingId,
+      eventName: data.eventName,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      eventType: data.eventType,
+      participantCount: data.participantCount,
+      verificationCode: verificationHash,
+      generatedAt: new Date().toISOString()
+    })
+
+    // Generate QR code as buffer
+    const qrCodeBuffer = await QRCode.toBuffer(qrData, {
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    })
+
+    return qrCodeBuffer
   }
 
   private getEmailTemplate(content: string): string {
@@ -374,12 +404,7 @@ class EmailService {
         </div>
         ` : ''}
         
-        <p>Please review this request in the admin panel and take appropriate action.</p>
         
-        <div class="contact-info">
-            <h4>🔗 Admin Panel Access</h4>
-            <div class="contact-item">Log in to approve, partially approve, or reject this booking</div>
-        </div>
       `
 
       await this.transporter.sendMail({
@@ -582,6 +607,7 @@ class EmailService {
         
         <div style="background-color: #e8f4fd; padding: 15px; border-radius: 8px; margin: 15px 0;">
             <p><strong>⏰ Important:</strong> Kindly arrive at the venue at least 2 hours prior to the event and take over the venue.</p>
+            <p><strong>📱 QR Code:</strong> Your booking verification QR code is attached to this email. Please save it and present it at the venue for verification.</p>
         </div>
         
         <div class="contact-info">
@@ -593,12 +619,22 @@ class EmailService {
         </div>
       `
 
+      // Generate QR code for the approved booking
+      const qrCodeBuffer = await this.generateQRCode(data)
+
       await this.transporter.sendMail({
         from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
         subject: `Booking Approved - Dr. SM Seth Auditorium`,
-        html: this.getEmailTemplate(content)
+        html: this.getEmailTemplate(content),
+        attachments: [
+          {
+            filename: `Auditorium-Booking-QR-${data.bookingId}.png`,
+            content: qrCodeBuffer,
+            contentType: 'image/png'
+          }
+        ]
       })
 
       return true
@@ -815,8 +851,9 @@ class EmailService {
         <div class="services-list">
             <h4>📋 Next Steps</h4>
             <ul>
-                <li>Your QR code is now available in the dashboard</li>
-                <li>Present the QR code on the event day for verification</li>
+                <li>Your QR code is attached to this email for verification</li>
+                <li>Save the QR code and present it on the event day</li>
+                <li>The QR code is also available in your dashboard</li>
                 <li>Arrive at least 30 minutes before your scheduled time</li>
             </ul>
         </div>
@@ -831,12 +868,22 @@ class EmailService {
         </div>
       `
 
+      // Generate QR code for the approved booking
+      const qrCodeBuffer = await this.generateQRCode(data)
+
       await this.transporter.sendMail({
         from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
         to: data.userEmail,
         cc: 'smsethaudi@poornima.org',
         subject: `Booking Approved - Dr. SM Seth Auditorium`,
-        html: this.getEmailTemplate(content)
+        html: this.getEmailTemplate(content),
+        attachments: [
+          {
+            filename: `Auditorium-Booking-QR-${data.bookingId}.png`,
+            content: qrCodeBuffer,
+            contentType: 'image/png'
+          }
+        ]
       })
 
       return true
