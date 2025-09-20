@@ -11,15 +11,27 @@ interface ThemeProviderProps {
 }
 
 export default function ThemeProvider({ children }: ThemeProviderProps) {
+  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setMounted(true)
     const timer = setTimeout(() => {
       setLoading(false)
     }, 3000) // 3 second preloader
 
     return () => clearTimeout(timer)
   }, [])
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <MuiThemeProvider theme={poornimaTheme}>
+        <CssBaseline />
+        <Preloader />
+      </MuiThemeProvider>
+    )
+  }
 
   if (loading) {
     return (

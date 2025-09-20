@@ -42,11 +42,17 @@ const PWAInstallPrompt: React.FC = () => {
   const [showInstallDialog, setShowInstallDialog] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
   const [showManualInstructions, setShowManualInstructions] = useState(false)
+  const [mounted, setMounted] = useState(false)
   
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   useEffect(() => {
+    setMounted(true)
+    
+    // Only run client-side code after mounting
+    if (typeof window === 'undefined') return
+
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true)
@@ -116,6 +122,11 @@ const PWAInstallPrompt: React.FC = () => {
   }
 
   // Don't show anything if already installed
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return null
+  }
+
   if (isInstalled) {
     return null
   }
