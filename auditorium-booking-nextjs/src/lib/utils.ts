@@ -12,30 +12,58 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
   const start = new Date(startTime)
   const end = new Date(endTime)
 
-  // Check if start time is in the future
-  if (start <= now) {
+  console.log('Time validation:', {
+    now: now.toISOString(),
+    start: start.toISOString(),
+    end: end.toISOString(),
+    startHour: start.getHours(),
+    endHour: end.getHours()
+  })
+
+  // Check if start time is in the future (allow some buffer for processing time)
+  const oneMinuteAgo = new Date(now.getTime() - 60000) // 1 minute buffer
+  if (start <= oneMinuteAgo) {
+    console.log('Validation failed: Start time is not in the future')
     return false
   }
 
   // Check if end time is after start time
   if (end <= start) {
+    console.log('Validation failed: End time is not after start time')
     return false
   }
 
-  // Check if booking is within business hours (8 AM to 10 PM)
+  // Check if booking starts within business hours (8 AM to 10 PM)
+  // End time can go up to 11 PM (22:59) to allow events that end at 10 PM
   const startHour = start.getHours()
   const endHour = end.getHours()
+  const endMinute = end.getMinutes()
 
-  if (startHour < 8 || endHour > 22) {
+  if (startHour < 8 || startHour >= 22) {
+    console.log('Validation failed: Start time outside business hours (8 AM - 10 PM)')
+    return false
+  }
+
+  // Allow end time up to 11 PM (23:00) to accommodate events ending at 10 PM
+  if (endHour > 23 || (endHour === 23 && endMinute > 0)) {
+    console.log('Validation failed: End time too late (after 11 PM)')
     return false
   }
 
   // Check if duration is reasonable (max 12 hours)
   const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
   if (durationHours > 12) {
+    console.log('Validation failed: Duration exceeds 12 hours')
     return false
   }
 
+  // Minimum duration check (at least 30 minutes)
+  if (durationHours < 0.5) {
+    console.log('Validation failed: Duration less than 30 minutes')
+    return false
+  }
+
+  console.log('Time validation passed')
   return true
 }
 

@@ -130,12 +130,57 @@ export async function POST(request: NextRequest) {
     const start = new Date(startTime)
     const end = new Date(endTime)
 
-    // Validate time slot
+    console.log('Booking request time validation:', {
+      startTime,
+      endTime,
+      parsedStart: start.toISOString(),
+      parsedEnd: end.toISOString()
+    })
+
+    // Validate time slot with detailed error checking
     if (!isValidTimeSlot(start, end)) {
-      return NextResponse.json(
-        { error: 'Invalid time slot' },
-        { status: 400 }
-      )
+      const now = new Date()
+      const oneMinuteAgo = new Date(now.getTime() - 60000)
+      
+      if (start <= oneMinuteAgo) {
+        return NextResponse.json(
+          { error: 'Start time must be in the future' },
+          { status: 400 }
+        )
+      } else if (end <= start) {
+        return NextResponse.json(
+          { error: 'End time must be after start time' },
+          { status: 400 }
+        )
+      } else if (start.getHours() < 8 || start.getHours() >= 22) {
+        return NextResponse.json(
+          { error: 'Bookings must start between 8:00 AM and 10:00 PM' },
+          { status: 400 }
+        )
+      } else if (end.getHours() > 23 || (end.getHours() === 23 && end.getMinutes() > 0)) {
+        return NextResponse.json(
+          { error: 'Bookings must end by 11:00 PM' },
+          { status: 400 }
+        )
+      } else {
+        const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+        if (durationHours > 12) {
+          return NextResponse.json(
+            { error: 'Maximum booking duration is 12 hours' },
+            { status: 400 }
+          )
+        } else if (durationHours < 0.5) {
+          return NextResponse.json(
+            { error: 'Minimum booking duration is 30 minutes' },
+            { status: 400 }
+          )
+        } else {
+          return NextResponse.json(
+            { error: 'Invalid time slot - please check your date and time selection' },
+            { status: 400 }
+          )
+        }
+      }
     }
 
     // Check for conflicts with existing bookings and blocked time slots
