@@ -59,8 +59,20 @@ const PWAInstallPrompt: React.FC = () => {
       return
     }
 
+    // Check for PWA support
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const isInWebAppiOS = (window.navigator as any).standalone === true
+    const isAndroid = /Android/.test(navigator.userAgent)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
+    
+    // Show install button for supported platforms even without beforeinstallprompt
+    if ((isAndroid || isIOS) && !isStandalone && !isInWebAppiOS) {
+      setIsInstallable(true)
+    }
+
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
+      console.log('beforeinstallprompt event fired')
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault()
       // Stash the event so it can be triggered later
@@ -79,9 +91,18 @@ const PWAInstallPrompt: React.FC = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
 
+    // Force show install prompt after 5 seconds if no event fired
+    const timeout = setTimeout(() => {
+      if (!deferredPrompt && !isInstalled) {
+        console.log('No beforeinstallprompt event, showing manual install')
+        setIsInstallable(true)
+      }
+    }, 5000)
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
+      clearTimeout(timeout)
     }
   }, [])
 
@@ -133,7 +154,62 @@ const PWAInstallPrompt: React.FC = () => {
 
   return (
     <>
-      {/* Install Button */}
+      {/* Floating Install Button - Always show if installable */}
+      {isInstallable && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 20, md: 20 },
+            right: 20,
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: 1
+          }}
+        >
+          {/* Main Install Button */}
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<InstallIcon />}
+            onClick={handleShowInstallDialog}
+            sx={{
+              backgroundColor: 'primary.main',
+              color: 'white',
+              borderRadius: 3,
+              px: 3,
+              py: 1.5,
+              fontSize: '1rem',
+              fontWeight: 600,
+              boxShadow: '0 4px 20px rgba(30, 64, 175, 0.4)',
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 25px rgba(30, 64, 175, 0.5)',
+              },
+              transition: 'all 0.3s ease',
+              animation: 'pulse 2s infinite'
+            }}
+          >
+            Install App
+          </Button>
+          
+          {/* Small indicator for PWA readiness */}
+          <Chip 
+            label={deferredPrompt ? "Ready to Install" : "PWA Available"} 
+            size="small" 
+            color="success"
+            sx={{ 
+              fontSize: '0.75rem',
+              backgroundColor: 'success.light',
+              color: 'success.contrastText'
+            }}
+          />
+        </Box>
+      )}
+
+      {/* Install Button - Legacy position */}
       {isInstallable && (
         <Button
           variant="outlined"
@@ -142,8 +218,8 @@ const PWAInstallPrompt: React.FC = () => {
           sx={{
             position: 'fixed',
             bottom: { xs: 90, md: 20 },
-            right: 20,
-            zIndex: 1000,
+            left: 20,
+            zIndex: 999,
             backgroundColor: 'background.paper',
             border: `2px solid ${theme.palette.primary.main}`,
             color: 'primary.main',

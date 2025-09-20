@@ -2,7 +2,7 @@
   "name": "Poornima Group - Dr. S.M Seth Auditorium Booking",
   "short_name": "Poornima Auditorium",
   "description": "Official auditorium booking platform for Poornima Group of Colleges - ज्ञानम् विना न किमपि साध्यम्",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1e40af",
@@ -10,6 +10,8 @@
   "scope": "/",
   "lang": "en",
   "categories": ["education", "business", "productivity"],
+  "dir": "ltr",
+  "display_override": ["window-controls-overlay", "standalone"],
   "icons": [
     {
       "src": "/favicon.svg",
