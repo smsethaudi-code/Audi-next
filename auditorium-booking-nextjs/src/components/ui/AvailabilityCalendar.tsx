@@ -111,9 +111,9 @@ export default function AvailabilityCalendar({ bookings, onDateClick }: Availabi
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper sx={{ p: 1.5 }}>
       {/* Calendar Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <IconButton onClick={() => navigateMonth('prev')}>
           <ChevronLeft />
         </IconButton>
@@ -145,7 +145,7 @@ export default function AvailabilityCalendar({ bookings, onDateClick }: Availabi
           if (day === null) {
             return (
               <Grid key={`empty-${index}`} size={{ xs: 12/7 }}>
-                <Box height={60} />
+                <Box height={50} />
               </Grid>
             )
           }
@@ -166,7 +166,7 @@ export default function AvailabilityCalendar({ bookings, onDateClick }: Availabi
                 <Paper
                   elevation={isToday ? 3 : 1}
                   sx={{
-                    height: 60,
+                    height: 50,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',

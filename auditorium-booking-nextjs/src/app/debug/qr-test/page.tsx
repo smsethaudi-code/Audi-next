@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Container, Typography, Button, Box, Paper, TextField } from '@mui/material'
 import QrScanner from 'qr-scanner'
 import QRCode from 'qrcode'
+import Navbar from '@/components/ui/Navbar'
 
 export default function QRTestPage() {
   const [qrData, setQrData] = useState('')
@@ -70,10 +71,12 @@ export default function QRTestPage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        QR Code Test Page
-      </Typography>
+    <>
+      <Navbar />
+      <Container maxWidth="md" sx={{ py: 4, pt: { xs: 10, md: 12 } }}>
+        <Typography variant="h4" gutterBottom>
+          QR Code Test Page
+        </Typography>
       
       <Box sx={{ mb: 4 }}>
         <Button 
@@ -126,6 +129,7 @@ export default function QRTestPage() {
           </Typography>
         </Paper>
       )}
-    </Container>
+      </Container>
+    </>
   )
 }

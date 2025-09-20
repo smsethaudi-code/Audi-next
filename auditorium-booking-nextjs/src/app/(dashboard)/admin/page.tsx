@@ -30,7 +30,11 @@ import {
   Tab,
   Alert,
   Pagination,
-  Stack
+  Stack,
+  useMediaQuery,
+  useTheme,
+  Paper,
+  Divider
 } from '@mui/material'
 import {
   Visibility as ViewIcon,
@@ -38,7 +42,6 @@ import {
   Schedule as PartialApproveIcon,
   Cancel as RejectIcon,
   Block as BlockIcon,
-  History as HistoryIcon,
   Event as EventIcon,
   Pending as PendingIcon,
   QrCodeScanner as QrIcon
@@ -89,6 +92,10 @@ function TabPanel(props: TabPanelProps) {
 export default function AdminDashboard() {
   const { data: session } = useSession()
   const router = useRouter()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  
   const [bookings, setBookings] = useState<Booking[]>([])
   const [blockedSlots, setBlockedSlots] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -323,6 +330,170 @@ export default function AdminDashboard() {
     })
   }
 
+  // Mobile-friendly booking card component
+  const BookingCard = ({ booking, showActions = true }: { booking: Booking, showActions?: boolean }) => (
+    <Paper 
+      elevation={1} 
+      sx={{ 
+        p: { xs: 2, sm: 3 }, 
+        mb: 2,
+        border: '1px solid',
+        borderColor: 'divider'
+      }}
+    >
+      <Stack spacing={2}>
+        {/* Header */}
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box flex={1} mr={2}>
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+              {booking.eventName}
+            </Typography>
+            <Typography variant="caption" color="textSecondary" display="block">
+              {booking.eventType}
+            </Typography>
+          </Box>
+          <Chip
+            label={booking.status === 'PARTIALLY_APPROVED' ? 'Partial Approved' : booking.status}
+            color={booking.status === 'PARTIALLY_APPROVED' ? 'info' : getStatusColor(booking.status) as any}
+            size="small"
+            sx={{ fontSize: '0.7rem' }}
+          />
+        </Box>
+
+        {/* Details Grid */}
+        <Box 
+          sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+            gap: 1.5,
+            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+          }}
+        >
+          <Box>
+            <Typography variant="caption" color="textSecondary" display="block">Organizer</Typography>
+            <Typography variant="body2">{booking.userName}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="textSecondary" display="block">Participants</Typography>
+            <Typography variant="body2">{booking.participantCount}</Typography>
+          </Box>
+          <Box sx={{ gridColumn: { xs: '1', sm: 'span 2' } }}>
+            <Typography variant="caption" color="textSecondary" display="block">Date & Time</Typography>
+            <Typography variant="body2">
+              {formatDate(booking.startTime)} → {formatDate(booking.endTime)}
+            </Typography>
+          </Box>
+          <Box sx={{ gridColumn: { xs: '1', sm: 'span 2' } }}>
+            <Typography variant="caption" color="textSecondary" display="block">Email</Typography>
+            <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{booking.userEmail}</Typography>
+          </Box>
+        </Box>
+
+        {/* Actions */}
+        {showActions && (
+          <>
+            <Divider />
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <IconButton
+                size="small"
+                onClick={() => setActionDialog({ open: true, type: 'view', booking })}
+                sx={{ 
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1
+                }}
+              >
+                <ViewIcon fontSize="small" />
+              </IconButton>
+              
+              {(booking as any).isExternal && booking.status === 'PENDING' && (
+                <IconButton
+                  size="small"
+                  color="warning"
+                  onClick={() => setActionDialog({ open: true, type: 'partial-approve', booking })}
+                  title="Partial Approval (Pending Payment)"
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: 'warning.main',
+                    borderRadius: 1
+                  }}
+                >
+                  <PartialApproveIcon fontSize="small" />
+                </IconButton>
+              )}
+              
+              {(booking.status === 'PENDING' || 
+                ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={() => setActionDialog({ open: true, type: 'approve', booking })}
+                  title={booking.status === 'PARTIALLY_APPROVED' ? 'Full Approval (Payment Received)' : 'Approve'}
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: 'success.main',
+                    borderRadius: 1
+                  }}
+                >
+                  <ApproveIcon fontSize="small" />
+                </IconButton>
+              )}
+              
+              {(booking.status === 'PENDING' || 
+                ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setActionDialog({ open: true, type: 'reject', booking })}
+                  title={booking.status === 'PARTIALLY_APPROVED' ? 'Reject (Payment Not Received)' : 'Reject'}
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: 'error.main',
+                    borderRadius: 1
+                  }}
+                >
+                  <RejectIcon fontSize="small" />
+                </IconButton>
+              )}
+              
+              {booking.status === 'APPROVED' && !(booking as any).isBlockedSlot && (
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setActionDialog({ open: true, type: 'cancel', booking })}
+                  title="Cancel Approved Booking"
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: 'error.main',
+                    borderRadius: 1
+                  }}
+                >
+                  <BlockIcon fontSize="small" />
+                </IconButton>
+              )}
+              
+              {(booking as any).isBlockedSlot && (
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleRemoveBlockedSlot((booking as any).originalBlockedSlot._id)}
+                  title="Remove Blocked Time Slot"
+                  sx={{ 
+                    border: '1px solid',
+                    borderColor: 'error.main',
+                    borderRadius: 1
+                  }}
+                >
+                  <RejectIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
+          </>
+        )}
+      </Stack>
+    </Paper>
+  )
+
   const pendingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'PARTIALLY_APPROVED')
   const partiallyApprovedBookings = bookings.filter(b => b.status === 'PARTIALLY_APPROVED')
   
@@ -366,13 +537,13 @@ export default function AdminDashboard() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 8, md: 4 }, px: { xs: 1, sm: 2 } }}>
       {/* Header */}
-      <Box mb={4}>
-        <Typography variant="h4" gutterBottom>
+      <Box mb={{ xs: 2, md: 4 }}>
+        <Typography variant={isMobile ? "h5" : "h4"} gutterBottom>
           Admin Dashboard
         </Typography>
-        <Typography variant="body1" color="textSecondary">
+        <Typography variant="body1" color="textSecondary" sx={{ fontSize: { xs: '0.875rem', md: '1rem' } }}>
           Manage auditorium bookings, approve requests, and block time slots.
         </Typography>
       </Box>
@@ -382,23 +553,30 @@ export default function AdminDashboard() {
         sx={{ 
           display: 'grid', 
           gridTemplateColumns: { 
-            xs: '1fr', 
-            sm: '1fr 1fr', 
+            xs: '1fr 1fr', 
+            sm: 'repeat(3, 1fr)', 
             md: 'repeat(5, 1fr)' 
           }, 
-          gap: 3, 
-          mb: 4 
+          gap: { xs: 1, sm: 2, md: 3 }, 
+          mb: { xs: 2, md: 4 } 
         }}
       >
         <Box>
           <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <PendingIcon color="warning" sx={{ mr: 2, fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h5">{pendingBookings.length}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Pending & Partial
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
+                <PendingIcon 
+                  color="warning" 
+                  sx={{ 
+                    mr: { xs: 0, sm: 2 }, 
+                    mb: { xs: 1, sm: 0 },
+                    fontSize: { xs: 28, sm: 40 } 
+                  }} 
+                />
+                <Box textAlign={{ xs: 'center', sm: 'left' }}>
+                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{pendingBookings.length}</Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                    {isSmallMobile ? 'Pending' : 'Pending & Partial'}
                   </Typography>
                 </Box>
               </Box>
@@ -408,13 +586,20 @@ export default function AdminDashboard() {
 
         <Box>
           <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <PartialApproveIcon color="info" sx={{ mr: 2, fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h5">{partiallyApprovedBookings.length}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Partially Approved
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
+                <PartialApproveIcon 
+                  color="info" 
+                  sx={{ 
+                    mr: { xs: 0, sm: 2 }, 
+                    mb: { xs: 1, sm: 0 },
+                    fontSize: { xs: 28, sm: 40 } 
+                  }} 
+                />
+                <Box textAlign={{ xs: 'center', sm: 'left' }}>
+                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{partiallyApprovedBookings.length}</Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                    {isSmallMobile ? 'Partial' : 'Partially Approved'}
                   </Typography>
                 </Box>
               </Box>
@@ -424,12 +609,19 @@ export default function AdminDashboard() {
 
         <Box>
           <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <ApproveIcon color="success" sx={{ mr: 2, fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h5">{approvedBookings.length}</Typography>
-                  <Typography variant="body2" color="textSecondary">
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
+                <ApproveIcon 
+                  color="success" 
+                  sx={{ 
+                    mr: { xs: 0, sm: 2 }, 
+                    mb: { xs: 1, sm: 0 },
+                    fontSize: { xs: 28, sm: 40 } 
+                  }} 
+                />
+                <Box textAlign={{ xs: 'center', sm: 'left' }}>
+                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{approvedBookings.length}</Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                     Approved
                   </Typography>
                 </Box>
@@ -440,13 +632,20 @@ export default function AdminDashboard() {
 
         <Box>
           <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <RejectIcon color="error" sx={{ mr: 2, fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h5">{rejectedBookings.length}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Rejected & Cancelled
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
+                <RejectIcon 
+                  color="error" 
+                  sx={{ 
+                    mr: { xs: 0, sm: 2 }, 
+                    mb: { xs: 1, sm: 0 },
+                    fontSize: { xs: 28, sm: 40 } 
+                  }} 
+                />
+                <Box textAlign={{ xs: 'center', sm: 'left' }}>
+                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{rejectedBookings.length}</Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                    {isSmallMobile ? 'Rejected' : 'Rejected & Cancelled'}
                   </Typography>
                 </Box>
               </Box>
@@ -454,14 +653,21 @@ export default function AdminDashboard() {
           </Card>
         </Box>
 
-        <Box>
+        <Box sx={{ gridColumn: { xs: 'span 2', sm: 'span 1' } }}>
           <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <EventIcon color="primary" sx={{ mr: 2, fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h5">{allBookings.length}</Typography>
-                  <Typography variant="body2" color="textSecondary">
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+              <Box display="flex" alignItems="center" flexDirection={{ xs: 'column', sm: 'row' }}>
+                <EventIcon 
+                  color="primary" 
+                  sx={{ 
+                    mr: { xs: 0, sm: 2 }, 
+                    mb: { xs: 1, sm: 0 },
+                    fontSize: { xs: 28, sm: 40 } 
+                  }} 
+                />
+                <Box textAlign={{ xs: 'center', sm: 'left' }}>
+                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{allBookings.length}</Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                     Total Bookings
                   </Typography>
                 </Box>
@@ -472,31 +678,53 @@ export default function AdminDashboard() {
       </Box>
 
       {/* Action Buttons */}
-      <Box mb={3}>
-        <Button
-          variant="contained"
-          startIcon={<BlockIcon />}
-          onClick={() => setBlockTimeDialog(true)}
-          sx={{ mr: 2 }}
+      <Box mb={{ xs: 2, md: 3 }}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={{ xs: 1, sm: 2 }}
+          sx={{ width: '100%' }}
         >
-          Block Time Slot
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<QrIcon />}
-          onClick={() => setQrVerificationOpen(true)}
-          color="primary"
-        >
-          Verify QR Code
-        </Button>
+          <Button
+            variant="contained"
+            startIcon={<BlockIcon />}
+            onClick={() => setBlockTimeDialog(true)}
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isSmallMobile}
+            sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+          >
+            {isSmallMobile ? 'Block Time' : 'Block Time Slot'}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<QrIcon />}
+            onClick={() => setQrVerificationOpen(true)}
+            color="primary"
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isSmallMobile}
+            sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+          >
+            {isSmallMobile ? 'Verify QR' : 'Verify QR Code'}
+          </Button>
+        </Stack>
       </Box>
 
       {/* Tabs */}
       <Card>
-        <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label={`Pending & Partial (${pendingBookings.length})`} />
-          <Tab label={`All Bookings (${totalBookings})`} />
-          <Tab label="Booking History" />
+        <Tabs 
+          value={tabValue} 
+          onChange={handleTabChange}
+          variant={isMobile ? "scrollable" : "standard"}
+          scrollButtons={isMobile ? "auto" : false}
+          sx={{
+            '& .MuiTab-root': {
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              minWidth: { xs: 120, sm: 160 },
+              px: { xs: 1, sm: 2 }
+            }
+          }}
+        >
+          <Tab label={isMobile ? `Pending (${pendingBookings.length})` : `Pending & Partial (${pendingBookings.length})`} />
+          <Tab label={isMobile ? `All (${totalBookings})` : `All Bookings (${totalBookings})`} />
         </Tabs>
 
         {/* Pending & Partially Approved Requests Tab */}
@@ -509,6 +737,223 @@ export default function AdminDashboard() {
               </Typography>
             </Box>
           ) : (
+            <>
+              {/* Mobile View - Cards */}
+              {isMobile ? (
+                <Box sx={{ px: { xs: 0, sm: 1 } }}>
+                  {pendingBookings.map((booking) => (
+                    <BookingCard key={booking._id} booking={booking} />
+                  ))}
+                </Box>
+              ) : (
+                /* Desktop View - Table */
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Event Details</TableCell>
+                        <TableCell>User</TableCell>
+                        <TableCell>Date & Time</TableCell>
+                        <TableCell>Participants</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Requested</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {pendingBookings.map((booking) => (
+                        <TableRow key={booking._id}>
+                          <TableCell>
+                            <Typography variant="subtitle2">{booking.eventName}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {booking.eventType}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">{booking.userName}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {booking.userEmail}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2">
+                              {formatDate(booking.startTime)}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              to {formatDate(booking.endTime)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{booking.participantCount}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={booking.status === 'PARTIALLY_APPROVED' ? 'Partial Approved' : 'Pending'} 
+                              color={booking.status === 'PARTIALLY_APPROVED' ? 'info' : 'warning'}
+                              size="small"
+                            />
+                            {(booking as any).isExternal && (
+                              <Chip 
+                                label="External" 
+                                color="secondary" 
+                                size="small" 
+                                sx={{ ml: 1 }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color="textSecondary">
+                              {formatDate(booking.createdAt)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              size="small"
+                              onClick={() => setActionDialog({ open: true, type: 'view', booking })}
+                            >
+                              <ViewIcon />
+                            </IconButton>
+                            {/* Show partial approve button only for external bookings that are pending */}
+                            {(booking as any).isExternal && booking.status === 'PENDING' && (
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                onClick={() => setActionDialog({ open: true, type: 'partial-approve', booking })}
+                                title="Partial Approval (Pending Payment)"
+                              >
+                                <PartialApproveIcon />
+                              </IconButton>
+                            )}
+                            {/* Show full approve button for all pending bookings, or partial -> full approve for external */}
+                            {(booking.status === 'PENDING' || 
+                              ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => setActionDialog({ open: true, type: 'approve', booking })}
+                                title={booking.status === 'PARTIALLY_APPROVED' ? 'Full Approval (Payment Received)' : 'Approve'}
+                              >
+                                <ApproveIcon />
+                              </IconButton>
+                            )}
+                            {/* Show reject button for pending bookings and partially approved external bookings */}
+                            {(booking.status === 'PENDING' || 
+                              ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => setActionDialog({ open: true, type: 'reject', booking })}
+                                title={booking.status === 'PARTIALLY_APPROVED' ? 'Reject (Payment Not Received)' : 'Reject'}
+                              >
+                                <RejectIcon />
+                              </IconButton>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </>
+          )}
+        </TabPanel>
+
+        {/* All Bookings Tab */}
+        <TabPanel value={tabValue} index={1}>
+          {/* Filter Controls */}
+          <Box sx={{ mb: 3 }}>
+            <Stack 
+              direction={{ xs: 'column', md: 'row' }} 
+              spacing={2} 
+              alignItems={{ xs: 'stretch', md: 'center' }}
+            >
+              <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
+                <InputLabel>Status Filter</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Status Filter"
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  <MenuItem value="ALL">All Statuses</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                  <MenuItem value="PARTIALLY_APPROVED">Partially Approved</MenuItem>
+                  <MenuItem value="APPROVED">Approved</MenuItem>
+                  <MenuItem value="REJECTED">Rejected</MenuItem>
+                  <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                  <MenuItem value="BLOCKED">Blocked by Admin</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
+                <InputLabel>Date Filter</InputLabel>
+                <Select
+                  value={dateFilter}
+                  label="Date Filter"
+                  onChange={(e) => {
+                    setDateFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  <MenuItem value="ALL">All Dates</MenuItem>
+                  <MenuItem value="UPCOMING">Upcoming</MenuItem>
+                  <MenuItem value="PAST">Past</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 120 } }}>
+                <InputLabel>Page Size</InputLabel>
+                <Select
+                  value={pageSize}
+                  label="Page Size"
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  <MenuItem value={5}>5 per page</MenuItem>
+                  <MenuItem value={10}>10 per page</MenuItem>
+                  <MenuItem value={20}>20 per page</MenuItem>
+                  <MenuItem value={50}>50 per page</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <Typography 
+                variant="body2" 
+                color="textSecondary"
+                sx={{ 
+                  mt: { xs: 1, md: 0 },
+                  textAlign: { xs: 'center', md: 'left' },
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                }}
+              >
+                Showing {Math.min((currentPage - 1) * pageSize + 1, totalBookings)} to {Math.min(currentPage * pageSize, totalBookings)} of {totalBookings} bookings
+              </Typography>
+            </Stack>
+          </Box>
+
+          {/* Bookings List */}
+          {isMobile ? (
+            /* Mobile View - Cards */
+            <Box sx={{ px: { xs: 0, sm: 1 } }}>
+              {bookings.length === 0 ? (
+                <Box textAlign="center" py={4}>
+                  <Typography variant="body2" color="textSecondary">
+                    No bookings found matching the current filters.
+                  </Typography>
+                </Box>
+              ) : (
+                bookings.map((booking) => (
+                  <BookingCard key={booking._id} booking={booking} />
+                ))
+              )}
+            </Box>
+          ) : (
+            /* Desktop View - Table */
             <TableContainer>
               <Table>
                 <TableHead>
@@ -516,14 +961,21 @@ export default function AdminDashboard() {
                     <TableCell>Event Details</TableCell>
                     <TableCell>User</TableCell>
                     <TableCell>Date & Time</TableCell>
-                    <TableCell>Participants</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Requested</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {pendingBookings.map((booking) => (
+                  {bookings.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        <Typography variant="body2" color="textSecondary">
+                          No bookings found matching the current filters.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    bookings.map((booking) => (
                     <TableRow key={booking._id}>
                       <TableCell>
                         <Typography variant="subtitle2">{booking.eventName}</Typography>
@@ -545,26 +997,12 @@ export default function AdminDashboard() {
                           to {formatDate(booking.endTime)}
                         </Typography>
                       </TableCell>
-                      <TableCell>{booking.participantCount}</TableCell>
                       <TableCell>
-                        <Chip 
-                          label={booking.status === 'PARTIALLY_APPROVED' ? 'Partial Approved' : 'Pending'} 
-                          color={booking.status === 'PARTIALLY_APPROVED' ? 'info' : 'warning'}
+                        <Chip
+                          label={booking.status}
+                          color={getStatusColor(booking.status) as any}
                           size="small"
                         />
-                        {(booking as any).isExternal && (
-                          <Chip 
-                            label="External" 
-                            color="secondary" 
-                            size="small" 
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" color="textSecondary">
-                          {formatDate(booking.createdAt)}
-                        </Typography>
                       </TableCell>
                       <TableCell>
                         <IconButton
@@ -573,204 +1011,47 @@ export default function AdminDashboard() {
                         >
                           <ViewIcon />
                         </IconButton>
-                        {/* Show partial approve button only for external bookings that are pending */}
-                        {(booking as any).isExternal && booking.status === 'PENDING' && (
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => setActionDialog({ open: true, type: 'partial-approve', booking })}
-                            title="Partial Approval (Pending Payment)"
-                          >
-                            <PartialApproveIcon />
-                          </IconButton>
-                        )}
-                        {/* Show full approve button for all pending bookings, or partial -> full approve for external */}
-                        {(booking.status === 'PENDING' || 
-                          ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => setActionDialog({ open: true, type: 'approve', booking })}
-                            title={booking.status === 'PARTIALLY_APPROVED' ? 'Full Approval (Payment Received)' : 'Approve'}
-                          >
-                            <ApproveIcon />
-                          </IconButton>
-                        )}
-                        {/* Show reject button for pending bookings and partially approved external bookings */}
-                        {(booking.status === 'PENDING' || 
-                          ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                        {/* Show cancel button for approved bookings, and remove button for blocked slots */}
+                        {booking.status === 'APPROVED' && !(booking as any).isBlockedSlot && (
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => setActionDialog({ open: true, type: 'reject', booking })}
-                            title={booking.status === 'PARTIALLY_APPROVED' ? 'Reject (Payment Not Received)' : 'Reject'}
+                            onClick={() => setActionDialog({ open: true, type: 'cancel', booking })}
+                            title="Cancel Approved Booking"
+                          >
+                            <BlockIcon />
+                          </IconButton>
+                        )}
+                        {(booking as any).isBlockedSlot && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleRemoveBlockedSlot((booking as any).originalBlockedSlot._id)}
+                            title="Remove Blocked Time Slot"
                           >
                             <RejectIcon />
                           </IconButton>
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
           )}
-        </TabPanel>
-
-        {/* All Bookings Tab */}
-        <TabPanel value={tabValue} index={1}>
-          {/* Filter Controls */}
-          <Box sx={{ mb: 3 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Status Filter</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status Filter"
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value)
-                    setCurrentPage(1) // Reset to first page when filter changes
-                  }}
-                >
-                  <MenuItem value="ALL">All Statuses</MenuItem>
-                  <MenuItem value="PENDING">Pending</MenuItem>
-                  <MenuItem value="PARTIALLY_APPROVED">Partially Approved</MenuItem>
-                  <MenuItem value="APPROVED">Approved</MenuItem>
-                  <MenuItem value="REJECTED">Rejected</MenuItem>
-                  <MenuItem value="CANCELLED">Cancelled</MenuItem>
-                  <MenuItem value="BLOCKED">Blocked by Admin</MenuItem>
-                </Select>
-              </FormControl>
-              
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Date Filter</InputLabel>
-                <Select
-                  value={dateFilter}
-                  label="Date Filter"
-                  onChange={(e) => {
-                    setDateFilter(e.target.value)
-                    setCurrentPage(1) // Reset to first page when filter changes
-                  }}
-                >
-                  <MenuItem value="ALL">All Dates</MenuItem>
-                  <MenuItem value="UPCOMING">Upcoming</MenuItem>
-                  <MenuItem value="PAST">Past</MenuItem>
-                </Select>
-              </FormControl>
-              
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <InputLabel>Page Size</InputLabel>
-                <Select
-                  value={pageSize}
-                  label="Page Size"
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value))
-                    setCurrentPage(1) // Reset to first page when page size changes
-                  }}
-                >
-                  <MenuItem value={5}>5 per page</MenuItem>
-                  <MenuItem value={10}>10 per page</MenuItem>
-                  <MenuItem value={20}>20 per page</MenuItem>
-                  <MenuItem value={50}>50 per page</MenuItem>
-                </Select>
-              </FormControl>
-              
-              <Typography variant="body2" color="textSecondary">
-                Showing {Math.min((currentPage - 1) * pageSize + 1, totalBookings)} to {Math.min(currentPage * pageSize, totalBookings)} of {totalBookings} bookings
-              </Typography>
-            </Stack>
-          </Box>
-
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Event Details</TableCell>
-                  <TableCell>User</TableCell>
-                  <TableCell>Date & Time</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {bookings.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Typography variant="body2" color="textSecondary">
-                        No bookings found matching the current filters.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  bookings.map((booking) => (
-                  <TableRow key={booking._id}>
-                    <TableCell>
-                      <Typography variant="subtitle2">{booking.eventName}</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {booking.eventType}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">{booking.userName}</Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {booking.userEmail}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatDate(booking.startTime)}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        to {formatDate(booking.endTime)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={booking.status}
-                        color={getStatusColor(booking.status) as any}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => setActionDialog({ open: true, type: 'view', booking })}
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      {/* Show cancel button for approved bookings, and remove button for blocked slots */}
-                      {booking.status === 'APPROVED' && !(booking as any).isBlockedSlot && (
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => setActionDialog({ open: true, type: 'cancel', booking })}
-                          title="Cancel Approved Booking"
-                        >
-                          <BlockIcon />
-                        </IconButton>
-                      )}
-                      {(booking as any).isBlockedSlot && (
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleRemoveBlockedSlot((booking as any).originalBlockedSlot._id)}
-                          title="Remove Blocked Time Slot"
-                        >
-                          <RejectIcon />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
 
           {/* Pagination */}
           {totalBookings > 0 && (
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body2" color="textSecondary">
+            <Box sx={{ 
+              mt: 3, 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              gap: 2
+            }}>
+              <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                 Total: {totalBookings} bookings
               </Typography>
               <Pagination
@@ -778,18 +1059,17 @@ export default function AdminDashboard() {
                 page={currentPage}
                 onChange={(event, page) => setCurrentPage(page)}
                 color="primary"
-                showFirstButton
-                showLastButton
+                showFirstButton={!isSmallMobile}
+                showLastButton={!isSmallMobile}
+                size={isSmallMobile ? 'small' : 'medium'}
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }
+                }}
               />
             </Box>
           )}
-        </TabPanel>
-
-        {/* Booking History Tab */}
-        <TabPanel value={tabValue} index={2}>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Historical bookings and analytics will be displayed here.
-          </Alert>
         </TabPanel>
       </Card>
 
@@ -799,8 +1079,18 @@ export default function AdminDashboard() {
         onClose={() => setActionDialog({ open: false, type: null, booking: null })}
         maxWidth="md"
         fullWidth
+        fullScreen={isSmallMobile}
+        sx={{
+          '& .MuiDialog-paper': {
+            margin: { xs: 1, sm: 2 },
+            width: { xs: 'calc(100% - 16px)', sm: 'auto' }
+          }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          fontSize: { xs: '1.1rem', sm: '1.25rem' },
+          pb: { xs: 1, sm: 2 }
+        }}>
           {actionDialog.type === 'approve' && 
             (actionDialog.booking?.status === 'PARTIALLY_APPROVED' ? 
               'Full Approval (Payment Received)' : 'Approve Booking')}
@@ -809,49 +1099,49 @@ export default function AdminDashboard() {
           {actionDialog.type === 'cancel' && 'Cancel Approved Booking'}
           {actionDialog.type === 'view' && 'Booking Details'}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
           {actionDialog.booking && (
             <Box>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                 {actionDialog.booking.eventName}
               </Typography>
               <Box 
                 sx={{ 
                   display: 'grid', 
                   gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
-                  gap: 2 
+                  gap: { xs: 1.5, sm: 2 }
                 }}
               >
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Event Type</Typography>
-                  <Typography variant="body1">{actionDialog.booking.eventType}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Event Type</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.eventType}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Organizer</Typography>
-                  <Typography variant="body1">{actionDialog.booking.userName}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Organizer</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.userName}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Email</Typography>
-                  <Typography variant="body1">{actionDialog.booking.userEmail}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Email</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, wordBreak: 'break-all' }}>{actionDialog.booking.userEmail}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Participants</Typography>
-                  <Typography variant="body1">{actionDialog.booking.participantCount}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Participants</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.participantCount}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Start Time</Typography>
-                  <Typography variant="body1">{formatDate(actionDialog.booking.startTime)}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Start Time</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{formatDate(actionDialog.booking.startTime)}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">End Time</Typography>
-                  <Typography variant="body1">{formatDate(actionDialog.booking.endTime)}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>End Time</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{formatDate(actionDialog.booking.endTime)}</Typography>
+                </Box>
+                <Box sx={{ gridColumn: { xs: '1', sm: 'span 2' } }}>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Description</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.eventDescription}</Typography>
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Description</Typography>
-                  <Typography variant="body1">{actionDialog.booking.eventDescription}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Status</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</Typography>
                   <Chip 
                     label={actionDialog.booking.status} 
                     color={
@@ -865,38 +1155,44 @@ export default function AdminDashboard() {
                   />
                 </Box>
                 <Box>
-                  <Typography variant="body2" color="textSecondary">Created At</Typography>
-                  <Typography variant="body1">{formatDate(actionDialog.booking.createdAt)}</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Created At</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{formatDate(actionDialog.booking.createdAt)}</Typography>
                 </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Institute Name</Typography>
-                  <Typography variant="body1">{(actionDialog.booking as any).instituteName || 'N/A'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Coordinator Phone</Typography>
-                  <Typography variant="body1">{(actionDialog.booking as any).coordinatorPhone || 'N/A'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Extra Time Before (mins)</Typography>
-                  <Typography variant="body1">{(actionDialog.booking as any).extraTimePre || 0}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Extra Time After (mins)</Typography>
-                  <Typography variant="body1">{(actionDialog.booking as any).extraTimePost || 0}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">External Event</Typography>
-                  <Typography variant="body1">{(actionDialog.booking as any).isExternal ? 'Yes' : 'No'}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Total Cost</Typography>
-                  <Typography variant="body1">₹{(actionDialog.booking as any).totalCost || 0}</Typography>
-                </Box>
+
+                {/* Additional Fields - Show in collapsed form on mobile */}
+                {!isSmallMobile && (
+                  <>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">Institute Name</Typography>
+                      <Typography variant="body1">{(actionDialog.booking as any).instituteName || 'N/A'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">Coordinator Phone</Typography>
+                      <Typography variant="body1">{(actionDialog.booking as any).coordinatorPhone || 'N/A'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">Extra Time Before (mins)</Typography>
+                      <Typography variant="body1">{(actionDialog.booking as any).extraTimePre || 0}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">Extra Time After (mins)</Typography>
+                      <Typography variant="body1">{(actionDialog.booking as any).extraTimePost || 0}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">External Event</Typography>
+                      <Typography variant="body1">{(actionDialog.booking as any).isExternal ? 'Yes' : 'No'}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">Total Cost</Typography>
+                      <Typography variant="body1">₹{(actionDialog.booking as any).totalCost || 0}</Typography>
+                    </Box>
+                  </>
+                )}
                 
                 {/* External Services */}
                 {(actionDialog.booking as any).externalServices && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary" gutterBottom>External Services</Typography>
+                  <Box sx={{ mt: 2, gridColumn: { xs: '1', sm: 'span 2' } }}>
+                    <Typography variant="body2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>External Services</Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                       {(actionDialog.booking as any).externalServices.refreshments && (
                         <Chip label="Refreshments" size="small" color="primary" />
@@ -916,32 +1212,32 @@ export default function AdminDashboard() {
 
                 {/* Approval Details */}
                 {actionDialog.booking.status === 'APPROVED' && (actionDialog.booking as any).approvedAt && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">Approved At</Typography>
-                    <Typography variant="body1">{formatDate((actionDialog.booking as any).approvedAt)}</Typography>
+                  <Box sx={{ mt: 2, gridColumn: { xs: '1', sm: 'span 2' } }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Approved At</Typography>
+                    <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{formatDate((actionDialog.booking as any).approvedAt)}</Typography>
                   </Box>
                 )}
                 
                 {/* Rejection Details */}
                 {actionDialog.booking.status === 'REJECTED' && actionDialog.booking.rejectionReason && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">Rejection Reason</Typography>
-                    <Typography variant="body1" color="error">{actionDialog.booking.rejectionReason}</Typography>
+                  <Box sx={{ mt: 2, gridColumn: { xs: '1', sm: 'span 2' } }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Rejection Reason</Typography>
+                    <Typography variant="body1" color="error" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.rejectionReason}</Typography>
                   </Box>
                 )}
 
                 {/* Cancellation Details */}
                 {actionDialog.booking.status === 'CANCELLED' && actionDialog.booking.rejectionReason && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">Cancellation Reason</Typography>
-                    <Typography variant="body1" color="error">{actionDialog.booking.rejectionReason}</Typography>
+                  <Box sx={{ mt: 2, gridColumn: { xs: '1', sm: 'span 2' } }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Cancellation Reason</Typography>
+                    <Typography variant="body1" color="error" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.rejectionReason}</Typography>
                   </Box>
                 )}
 
                 {actionDialog.booking.specialRequirements && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">Special Requirements</Typography>
-                    <Typography variant="body1">{actionDialog.booking.specialRequirements}</Typography>
+                  <Box sx={{ mt: 2, gridColumn: { xs: '1', sm: 'span 2' } }}>
+                    <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Special Requirements</Typography>
+                    <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.specialRequirements}</Typography>
                   </Box>
                 )}
               </Box>
@@ -955,11 +1251,12 @@ export default function AdminDashboard() {
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   sx={{ mt: 2 }}
+                  size={isMobile ? 'small' : 'medium'}
                 />
               )}
 
               {actionDialog.type === 'cancel' && (
-                <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>
+                <Alert severity="warning" sx={{ mt: 2, mb: 2, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   <strong>Warning:</strong> Canceling an approved booking will permanently mark it as canceled. 
                   This action cannot be undone. Please provide a reason for the cancellation.
                 </Alert>
@@ -975,27 +1272,55 @@ export default function AdminDashboard() {
                   onChange={(e) => setCancellationReason(e.target.value)}
                   sx={{ mt: 2 }}
                   required
+                  size={isMobile ? 'small' : 'medium'}
                 />
               )}
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setActionDialog({ open: false, type: null, booking: null })}>
+        <DialogActions sx={{ 
+          px: { xs: 2, sm: 3 }, 
+          pb: { xs: 2, sm: 3 },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, sm: 0 }
+        }}>
+          <Button 
+            onClick={() => setActionDialog({ open: false, type: null, booking: null })}
+            fullWidth={isSmallMobile}
+            size={isMobile ? 'small' : 'medium'}
+          >
             Cancel
           </Button>
           {actionDialog.type === 'partial-approve' && (
-            <Button onClick={() => handleBookingAction('partial-approve')} color="warning" variant="contained">
+            <Button 
+              onClick={() => handleBookingAction('partial-approve')} 
+              color="warning" 
+              variant="contained"
+              fullWidth={isSmallMobile}
+              size={isMobile ? 'small' : 'medium'}
+            >
               Partial Approve (Pending Payment)
             </Button>
           )}
           {actionDialog.type === 'approve' && (
-            <Button onClick={() => handleBookingAction('approve')} color="success" variant="contained">
+            <Button 
+              onClick={() => handleBookingAction('approve')} 
+              color="success" 
+              variant="contained"
+              fullWidth={isSmallMobile}
+              size={isMobile ? 'small' : 'medium'}
+            >
               {actionDialog.booking?.status === 'PARTIALLY_APPROVED' ? 'Full Approve (Payment Received)' : 'Approve'}
             </Button>
           )}
           {actionDialog.type === 'reject' && (
-            <Button onClick={() => handleBookingAction('reject')} color="error" variant="contained">
+            <Button 
+              onClick={() => handleBookingAction('reject')} 
+              color="error" 
+              variant="contained"
+              fullWidth={isSmallMobile}
+              size={isMobile ? 'small' : 'medium'}
+            >
               Reject
             </Button>
           )}
@@ -1005,6 +1330,8 @@ export default function AdminDashboard() {
               color="error" 
               variant="contained"
               disabled={!cancellationReason.trim()}
+              fullWidth={isSmallMobile}
+              size={isMobile ? 'small' : 'medium'}
             >
               Cancel Booking
             </Button>
@@ -1013,14 +1340,26 @@ export default function AdminDashboard() {
       </Dialog>
 
       {/* Block Time Dialog */}
-      <Dialog open={blockTimeDialog} onClose={() => setBlockTimeDialog(false)}>
-        <DialogTitle>Block Time Slot</DialogTitle>
-        <DialogContent>
+      <Dialog 
+        open={blockTimeDialog} 
+        onClose={() => setBlockTimeDialog(false)}
+        fullWidth
+        maxWidth="sm"
+        fullScreen={isSmallMobile}
+        sx={{
+          '& .MuiDialog-paper': {
+            margin: { xs: 1, sm: 2 },
+            width: { xs: 'calc(100% - 16px)', sm: 'auto' }
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>Block Time Slot</DialogTitle>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
           <Box 
             sx={{ 
               display: 'grid', 
               gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
-              gap: 2, 
+              gap: { xs: 2, sm: 2 }, 
               mt: 1 
             }}
           >
@@ -1031,6 +1370,7 @@ export default function AdminDashboard() {
               value={blockTimeData.startTime}
               onChange={(e) => setBlockTimeData({ ...blockTimeData, startTime: e.target.value })}
               InputLabelProps={{ shrink: true }}
+              size={isMobile ? 'small' : 'medium'}
             />
             <TextField
               fullWidth
@@ -1039,6 +1379,7 @@ export default function AdminDashboard() {
               value={blockTimeData.endTime}
               onChange={(e) => setBlockTimeData({ ...blockTimeData, endTime: e.target.value })}
               InputLabelProps={{ shrink: true }}
+              size={isMobile ? 'small' : 'medium'}
             />
           </Box>
           <Box sx={{ mt: 2 }}>
@@ -1047,12 +1388,29 @@ export default function AdminDashboard() {
               label="Reason for Blocking"
               value={blockTimeData.reason}
               onChange={(e) => setBlockTimeData({ ...blockTimeData, reason: e.target.value })}
+              size={isMobile ? 'small' : 'medium'}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBlockTimeDialog(false)}>Cancel</Button>
-          <Button onClick={handleBlockTime} variant="contained">
+        <DialogActions sx={{ 
+          px: { xs: 2, sm: 3 }, 
+          pb: { xs: 2, sm: 3 },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, sm: 0 }
+        }}>
+          <Button 
+            onClick={() => setBlockTimeDialog(false)}
+            fullWidth={isSmallMobile}
+            size={isMobile ? 'small' : 'medium'}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleBlockTime} 
+            variant="contained"
+            fullWidth={isSmallMobile}
+            size={isMobile ? 'small' : 'medium'}
+          >
             Block Time
           </Button>
         </DialogActions>

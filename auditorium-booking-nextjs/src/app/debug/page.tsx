@@ -2,15 +2,18 @@
 
 import { useSession } from 'next-auth/react'
 import { Container, Typography, Box, Card, CardContent } from '@mui/material'
+import Navbar from '@/components/ui/Navbar'
 
 export default function DebugPage() {
   const { data: session, status } = useSession()
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Debug Information
-      </Typography>
+    <>
+      <Navbar />
+      <Container maxWidth="md" sx={{ mt: 4, pt: { xs: 8, md: 10 } }}>
+        <Typography variant="h4" gutterBottom>
+          Debug Information
+        </Typography>
       
       <Card sx={{ mb: 2 }}>
         <CardContent>
@@ -40,6 +43,7 @@ export default function DebugPage() {
           </Typography>
         </CardContent>
       </Card>
-    </Container>
+      </Container>
+    </>
   )
 }
