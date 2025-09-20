@@ -43,6 +43,7 @@ const PWAInstallPrompt: React.FC = () => {
   const [isInstalled, setIsInstalled] = useState(false)
   const [showManualInstructions, setShowManualInstructions] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [debugInfo, setDebugInfo] = useState('')
   
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -53,26 +54,27 @@ const PWAInstallPrompt: React.FC = () => {
     // Only run client-side code after mounting
     if (typeof window === 'undefined') return
 
+    // Debug PWA installation criteria
+    const debugData = {
+      isHTTPS: location.protocol === 'https:',
+      hasServiceWorker: 'serviceWorker' in navigator,
+      isStandalone: window.matchMedia('(display-mode: standalone)').matches,
+      userAgent: navigator.userAgent,
+      hasManifest: document.querySelector('link[rel="manifest"]') !== null
+    }
+    
+    setDebugInfo(JSON.stringify(debugData, null, 2))
+    console.log('PWA Debug Info:', debugData)
+
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true)
       return
     }
 
-    // Check for PWA support
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    const isInWebAppiOS = (window.navigator as any).standalone === true
-    const isAndroid = /Android/.test(navigator.userAgent)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
-    
-    // Show install button for supported platforms even without beforeinstallprompt
-    if ((isAndroid || isIOS) && !isStandalone && !isInWebAppiOS) {
-      setIsInstallable(true)
-    }
-
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      console.log('beforeinstallprompt event fired')
+      console.log('✅ beforeinstallprompt event fired - PWA is installable!')
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault()
       // Stash the event so it can be triggered later
@@ -91,46 +93,58 @@ const PWAInstallPrompt: React.FC = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('appinstalled', handleAppInstalled)
 
-    // Force show install prompt after 5 seconds if no event fired
-    const timeout = setTimeout(() => {
+    // Check after a short delay if criteria might be met
+    const timeoutCheck = setTimeout(() => {
       if (!deferredPrompt && !isInstalled) {
-        console.log('No beforeinstallprompt event, showing manual install')
-        setIsInstallable(true)
+        console.log('❌ beforeinstallprompt event did not fire. PWA installation criteria may not be met.')
+        console.log('Debug info:', debugData)
+        
+        // On mobile browsers, still show install option for manual installation
+        if (isMobile) {
+          setIsInstallable(true)
+        }
       }
-    }, 5000)
+    }, 3000)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('appinstalled', handleAppInstalled)
-      clearTimeout(timeout)
+      clearTimeout(timeoutCheck)
     }
   }, [])
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      // Show manual installation instructions
+      // For browsers that don't fire beforeinstallprompt, check if PWA is installable
+      // and provide instructions
       setShowManualInstructions(true)
       return
     }
 
-    // Hide the install dialog
-    setShowInstallDialog(false)
+    try {
+      // Hide the install dialog first
+      setShowInstallDialog(false)
 
-    // Show the install prompt
-    deferredPrompt.prompt()
+      // Show the browser's native install prompt
+      await deferredPrompt.prompt()
 
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice
 
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt')
-    } else {
-      console.log('User dismissed the install prompt')
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt')
+      } else {
+        console.log('User dismissed the install prompt')
+      }
+
+      // Clear the deferredPrompt
+      setDeferredPrompt(null)
+      setIsInstallable(false)
+    } catch (error) {
+      console.error('Error showing install prompt:', error)
+      // Fallback to manual instructions
+      setShowManualInstructions(true)
     }
-
-    // Clear the deferredPrompt
-    setDeferredPrompt(null)
-    setIsInstallable(false)
   }
 
   const handleShowInstallDialog = () => {
