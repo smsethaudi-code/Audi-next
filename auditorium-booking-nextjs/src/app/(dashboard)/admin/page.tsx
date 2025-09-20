@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import {
   Container,
   Card,
@@ -66,6 +65,64 @@ interface Booking {
   approvedBy?: string
   approvedAt?: string
   createdAt: string
+  instituteName?: string
+  coordinatorPhone?: string
+  extraTimePre?: number
+  extraTimePost?: number
+  isExternal?: boolean
+  totalCost?: number
+  externalServices?: Record<string, boolean>
+  isBlockedSlot?: boolean
+  originalBlockedSlot?: BlockedTimeSlot
+}
+
+interface BlockedTimeSlot {
+  _id: string
+  startTime: string
+  endTime: string
+  reason: string
+  blockedBy: string
+  blockedByName: string
+  isRecurring: boolean
+  recurringPattern?: {
+    frequency: 'daily' | 'weekly' | 'monthly'
+    interval: number
+    endDate?: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+interface BookingsApiResponse {
+  bookings: Booking[]
+  pagination?: {
+    total: number
+    page: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
+}
+
+interface BlockedSlotsApiResponse {
+  blockedSlots: BlockedTimeSlot[]
+}
+
+interface VerificationData {
+  verifiedBy: string
+  verifiedAt: string
+  actualParticipants?: number
+}
+
+interface BookingData {
+  bookingId: string
+  eventName: string
+  startTime: string
+  endTime: string
+  eventType: string
+  participantCount: number
+  verificationCode: string
+  generatedAt: string
 }
 
 interface TabPanelProps {
@@ -90,14 +147,12 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function AdminDashboard() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'))
   
   const [bookings, setBookings] = useState<Booking[]>([])
-  const [blockedSlots, setBlockedSlots] = useState<any[]>([])
+  const [blockedSlots, setBlockedSlots] = useState<BlockedTimeSlot[]>([])
   const [loading, setLoading] = useState(true)
   const [tabValue, setTabValue] = useState(0)
   
@@ -143,26 +198,26 @@ export default function AdminDashboard() {
       
       // Fetch bookings with pagination
       const bookingsResponse = await fetch(`/api/admin/bookings?${params}`)
-      let allFetchedBookings: any[] = []
+      let allFetchedBookings: Booking[] = []
       let totalCount = 0
       
       if (bookingsResponse.ok) {
-        const bookingsData = await bookingsResponse.json()
+        const bookingsData: BookingsApiResponse = await bookingsResponse.json()
         allFetchedBookings = [...bookingsData.bookings]
         totalCount = bookingsData.pagination?.total || 0
       }
 
       // Fetch blocked time slots if needed
       const blockedResponse = await fetch('/api/bookings/block')
-      let blockedSlots: any[] = []
+      let blockedSlots: BlockedTimeSlot[] = []
       if (blockedResponse.ok) {
-        const blockedData = await blockedResponse.json()
+        const blockedData: BlockedSlotsApiResponse = await blockedResponse.json()
         blockedSlots = blockedData.blockedSlots || []
         setBlockedSlots(blockedSlots)
         
         // Include blocked slots in the display if filter allows
         if (statusFilter === 'ALL' || statusFilter === 'BLOCKED') {
-          const transformedBlockedSlots = blockedSlots.map((slot: any) => ({
+          const transformedBlockedSlots = blockedSlots.map((slot: BlockedTimeSlot) => ({
             _id: `blocked_${slot._id}`,
             eventName: `BLOCKED: ${slot.reason}`,
             eventType: 'Time Block',
@@ -185,7 +240,7 @@ export default function AdminDashboard() {
             isExternal: false,
             totalCost: 0,
             externalServices: {}
-          }))
+          } as Booking))
           
           if (statusFilter === 'BLOCKED') {
             // Show only blocked slots
@@ -203,18 +258,18 @@ export default function AdminDashboard() {
       let filteredBookings = allFetchedBookings
       if (dateFilter === 'UPCOMING') {
         const now = new Date()
-        filteredBookings = allFetchedBookings.filter((booking: any) => 
+        filteredBookings = allFetchedBookings.filter((booking: Booking) => 
           new Date(booking.startTime) > now
         )
       } else if (dateFilter === 'PAST') {
         const now = new Date()
-        filteredBookings = allFetchedBookings.filter((booking: any) => 
+        filteredBookings = allFetchedBookings.filter((booking: Booking) => 
           new Date(booking.startTime) < now
         )
       }
       
       // Sort by start time
-      filteredBookings.sort((a: any, b: any) => 
+      filteredBookings.sort((a: Booking, b: Booking) => 
         new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
       )
       
@@ -288,7 +343,7 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleQRVerificationSuccess = async (bookingId: string, verificationData: any) => {
+  const handleQRVerificationSuccess = async (bookingId: string, verificationData: BookingData) => {
     try {
       // Update local booking state
       setBookings(prev => prev.map(booking => 
@@ -406,7 +461,7 @@ export default function AdminDashboard() {
                 <ViewIcon fontSize="small" />
               </IconButton>
               
-              {(booking as any).isExternal && booking.status === 'PENDING' && (
+              {booking.isExternal && booking.status === 'PENDING' && (
                 <IconButton
                   size="small"
                   color="warning"
@@ -423,7 +478,7 @@ export default function AdminDashboard() {
               )}
               
               {(booking.status === 'PENDING' || 
-                ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                (booking.isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
                 <IconButton
                   size="small"
                   color="success"
@@ -440,7 +495,7 @@ export default function AdminDashboard() {
               )}
               
               {(booking.status === 'PENDING' || 
-                ((booking as any).isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
+                (booking.isExternal && booking.status === 'PARTIALLY_APPROVED')) && (
                 <IconButton
                   size="small"
                   color="error"
@@ -456,7 +511,7 @@ export default function AdminDashboard() {
                 </IconButton>
               )}
               
-              {booking.status === 'APPROVED' && !(booking as any).isBlockedSlot && (
+              {booking.status === 'APPROVED' && !booking.isBlockedSlot && (
                 <IconButton
                   size="small"
                   color="error"

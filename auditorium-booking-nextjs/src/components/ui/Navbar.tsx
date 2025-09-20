@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Toolbar, Typography, Button, Box, Menu, MenuItem, Avatar, IconButton, useTheme, useMediaQuery, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material'
+import { AppBar, Toolbar, Typography, Button, Box, Menu, MenuItem, Avatar, IconButton, useTheme, useMediaQuery, Drawer, List, ListItem, ListItemIcon, ListItemText, ListItemButton, Divider } from '@mui/material'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -212,30 +212,30 @@ export default function Navbar({ hideSignIn = false }: NavbarProps) {
             </ListItem>
             <Divider />
             
-            <ListItem button onClick={() => handleNavigation('/dashboard')}>
+            <ListItemButton onClick={() => handleNavigation('/dashboard')}>
               <ListItemIcon>
                 <Dashboard />
               </ListItemIcon>
               <ListItemText primary="Dashboard" />
-            </ListItem>
+            </ListItemButton>
             
             {session.user.role === 'admin' && (
-              <ListItem button onClick={() => handleNavigation('/admin')}>
+              <ListItemButton onClick={() => handleNavigation('/admin')}>
                 <ListItemIcon>
                   <AdminPanelSettings />
                 </ListItemIcon>
                 <ListItemText primary="Admin Panel" />
-              </ListItem>
+              </ListItemButton>
             )}
             
             <Divider sx={{ my: 1 }} />
             
-            <ListItem button onClick={handleSignOut}>
+            <ListItemButton onClick={handleSignOut}>
               <ListItemIcon>
                 <ExitToApp />
               </ListItemIcon>
               <ListItemText primary="Sign Out" />
-            </ListItem>
+            </ListItemButton>
           </List>
         )}
       </Drawer>

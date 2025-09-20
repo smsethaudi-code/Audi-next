@@ -1,0 +1,26 @@
+<!-- Simplified 72x72 Poornima Group icon -->
+<svg width="72" height="72" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="256" cy="256" r="256" fill="#ffffff"/>
+  
+  <!-- Simplified Laurel Wreath -->
+  <path d="M80 180 Q100 160 120 180 Q110 220 90 240 Q70 220 80 180 Z" fill="#d4af37"/>
+  <path d="M432 180 Q412 160 392 180 Q402 220 422 240 Q442 220 432 180 Z" fill="#d4af37"/>
+  <path d="M70 300 Q90 280 110 300 Q100 340 80 360 Q60 340 70 300 Z" fill="#d4af37"/>
+  <path d="M442 300 Q422 280 402 300 Q412 340 432 360 Q452 340 442 300 Z" fill="#d4af37"/>
+  
+  <!-- Central Blue Circle -->
+  <circle cx="256" cy="256" r="120" fill="#1e40af"/>
+  
+  <!-- Simplified Rays -->
+  <path d="M256 136 L264 166 L248 166 Z" fill="#ffffff"/>
+  <path d="M256 136 L264 166 L248 166 Z" fill="#ffffff" transform="rotate(90 256 256)"/>
+  <path d="M256 136 L264 166 L248 166 Z" fill="#ffffff" transform="rotate(180 256 256)"/>
+  <path d="M256 136 L264 166 L248 166 Z" fill="#ffffff" transform="rotate(270 256 256)"/>
+  
+  <!-- Simplified India Map -->
+  <path d="M256 220 C270 215 280 225 285 240 C280 255 265 265 256 265 C247 265 232 255 227 240 C232 225 242 215 256 220 Z" fill="#d4af37"/>
+  
+  <!-- Bottom Banner -->
+  <rect x="150" y="400" width="212" height="40" rx="5" fill="#ffffff" stroke="#1e40af" stroke-width="2"/>
+  <text x="256" y="425" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e40af">POORNIMA</text>
+</svg>

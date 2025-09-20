@@ -1,0 +1,50 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="#ffffff"/>
+  
+  <!-- Outer Laurel Wreath - Left -->
+  <path d="M80 200 Q90 180 110 190 Q120 200 115 220 Q110 240 100 250 Q85 260 70 250 Q60 240 65 220 Q70 200 80 200 Z" fill="#d4af37"/>
+  <path d="M70 240 Q80 220 100 230 Q110 240 105 260 Q100 280 90 290 Q75 300 60 290 Q50 280 55 260 Q60 240 70 240 Z" fill="#d4af37"/>
+  <path d="M65 280 Q75 260 95 270 Q105 280 100 300 Q95 320 85 330 Q70 340 55 330 Q45 320 50 300 Q55 280 65 280 Z" fill="#d4af37"/>
+  
+  <!-- Outer Laurel Wreath - Right -->
+  <path d="M432 200 Q422 180 402 190 Q392 200 397 220 Q402 240 412 250 Q427 260 442 250 Q452 240 447 220 Q442 200 432 200 Z" fill="#d4af37"/>
+  <path d="M442 240 Q432 220 412 230 Q402 240 407 260 Q412 280 422 290 Q437 300 452 290 Q462 280 457 260 Q452 240 442 240 Z" fill="#d4af37"/>
+  <path d="M447 280 Q437 260 417 270 Q407 280 412 300 Q417 320 427 330 Q442 340 457 330 Q467 320 462 300 Q457 280 447 280 Z" fill="#d4af37"/>
+  
+  <!-- Central Blue Circle with Rays -->
+  <circle cx="256" cy="256" r="120" fill="#1e40af"/>
+  
+  <!-- Sunburst Rays -->
+  <g transform="translate(256,256)">
+    <path d="M0,-120 L8,-90 L-8,-90 Z" fill="#ffffff"/>
+    <path d="M34.6,-113.1 L42.6,-83.1 L26.6,-83.1 Z" fill="#ffffff" transform="rotate(30)"/>
+    <path d="M67.1,-87.4 L75.1,-57.4 L59.1,-57.4 Z" fill="#ffffff" transform="rotate(60)"/>
+    <path d="M87.4,-67.1 L95.4,-37.1 L79.4,-37.1 Z" fill="#ffffff" transform="rotate(90)"/>
+    <path d="M113.1,-34.6 L121.1,-4.6 L105.1,-4.6 Z" fill="#ffffff" transform="rotate(120)"/>
+    <path d="M120,0 L128,30 L112,30 Z" fill="#ffffff" transform="rotate(150)"/>
+    <path d="M113.1,34.6 L121.1,64.6 L105.1,64.6 Z" fill="#ffffff" transform="rotate(180)"/>
+    <path d="M87.4,67.1 L95.4,97.1 L79.4,97.1 Z" fill="#ffffff" transform="rotate(210)"/>
+    <path d="M67.1,87.4 L75.1,117.4 L59.1,117.4 Z" fill="#ffffff" transform="rotate(240)"/>
+    <path d="M34.6,113.1 L42.6,143.1 L26.6,143.1 Z" fill="#ffffff" transform="rotate(270)"/>
+    <path d="M0,120 L8,150 L-8,150 Z" fill="#ffffff" transform="rotate(300)"/>
+    <path d="M-34.6,113.1 L-26.6,143.1 L-42.6,143.1 Z" fill="#ffffff" transform="rotate(330)"/>
+  </g>
+  
+  <!-- India Map Silhouette in Gold -->
+  <g transform="translate(256,256) scale(0.8)">
+    <path d="M-40,-60 Q-35,-65 -25,-65 Q-15,-70 0,-65 Q15,-60 25,-55 Q35,-50 45,-40 Q50,-30 45,-20 Q40,-10 35,0 Q30,10 25,20 Q20,30 15,40 Q10,50 0,55 Q-10,50 -20,45 Q-30,40 -35,30 Q-40,20 -35,10 Q-30,0 -35,-10 Q-40,-20 -45,-30 Q-50,-40 -45,-50 Q-40,-55 -40,-60 Z" fill="#d4af37"/>
+  </g>
+  
+  <!-- Bottom Text Banner -->
+  <rect x="100" y="380" width="312" height="60" rx="8" fill="#ffffff" stroke="#1e40af" stroke-width="2"/>
+  
+  <!-- Estd. 2000 -->
+  <text x="256" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e40af">Estd. 2000</text>
+  
+  <!-- POORNIMA GROUP -->
+  <text x="256" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#1e40af">POORNIMA GROUP</text>
+  
+  <!-- Hindi Text -->
+  <text x="256" y="435" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#1e40af">ज्ञानम् विना न किमपि साध्यम्</text>
+</svg>

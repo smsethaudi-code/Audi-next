@@ -21,7 +21,6 @@ import { useState } from 'react';
 import { academicColorConstants } from '../../../theme/poornimaTheme';
 
 const LoginPage = () => {
-  const theme = useTheme();
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);

@@ -1,0 +1,66 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="#ffffff"/>
+  
+  <!-- Outer Laurel Wreath - Left Side -->
+  <g fill="#d4af37">
+    <!-- Left branch segments -->
+    <ellipse cx="80" cy="180" rx="15" ry="25" transform="rotate(-30 80 180)"/>
+    <ellipse cx="70" cy="210" rx="12" ry="20" transform="rotate(-45 70 210)"/>
+    <ellipse cx="65" cy="240" rx="12" ry="20" transform="rotate(-60 65 240)"/>
+    <ellipse cx="65" cy="270" rx="12" ry="20" transform="rotate(-75 65 270)"/>
+    <ellipse cx="70" cy="300" rx="12" ry="20" transform="rotate(-90 70 300)"/>
+    <ellipse cx="80" cy="330" rx="15" ry="25" transform="rotate(-105 80 330)"/>
+  </g>
+  
+  <!-- Outer Laurel Wreath - Right Side -->
+  <g fill="#d4af37">
+    <!-- Right branch segments -->
+    <ellipse cx="432" cy="180" rx="15" ry="25" transform="rotate(30 432 180)"/>
+    <ellipse cx="442" cy="210" rx="12" ry="20" transform="rotate(45 442 210)"/>
+    <ellipse cx="447" cy="240" rx="12" ry="20" transform="rotate(60 447 240)"/>
+    <ellipse cx="447" cy="270" rx="12" ry="20" transform="rotate(75 447 270)"/>
+    <ellipse cx="442" cy="300" rx="12" ry="20" transform="rotate(90 442 300)"/>
+    <ellipse cx="432" cy="330" rx="15" ry="25" transform="rotate(105 432 330)"/>
+  </g>
+  
+  <!-- Central Blue Circle -->
+  <circle cx="256" cy="256" r="130" fill="#1e40af"/>
+  
+  <!-- Sunburst Rays -->
+  <g fill="#ffffff">
+    <path d="M256 126 L264 156 L248 156 Z"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(30 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(60 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(90 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(120 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(150 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(180 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(210 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(240 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(270 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(300 256 256)"/>
+    <path d="M256 126 L264 156 L248 156 Z" transform="rotate(330 256 256)"/>
+  </g>
+  
+  <!-- India Map Silhouette in Gold -->
+  <g transform="translate(256,256) scale(1.2)" fill="#d4af37">
+    <path d="M-15,-35 C-10,-40 0,-42 10,-40 C25,-35 35,-25 40,-10 C42,0 40,15 35,25 C25,40 10,45 0,45 C-15,42 -25,35 -30,25 C-35,10 -32,0 -30,-15 C-25,-25 -20,-32 -15,-35 Z"/>
+    <!-- Small details for states -->
+    <circle cx="-5" cy="-10" r="2"/>
+    <circle cx="8" cy="5" r="1.5"/>
+    <circle cx="-8" cy="15" r="1"/>
+  </g>
+  
+  <!-- Text Banner at Bottom -->
+  <rect x="80" y="400" width="352" height="70" rx="10" fill="#ffffff" stroke="#1e40af" stroke-width="3"/>
+  
+  <!-- Estd. 2000 -->
+  <text x="256" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e40af">Estd. 2000</text>
+  
+  <!-- POORNIMA GROUP -->
+  <text x="256" y="445" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1e40af">POORNIMA GROUP</text>
+  
+  <!-- Sanskrit Motto -->
+  <text x="256" y="462" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#1e40af">ज्ञानम् विना न किमपि साध्यम्</text>
+</svg>

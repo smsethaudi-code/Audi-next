@@ -59,7 +59,9 @@ const float = keyframes`
 `
 
 // Styled components
-const AnimatedContainer = styled(Box)<{ animationType?: string; delay?: number }>(
+const AnimatedContainer = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'animationType' && prop !== 'delay'
+})<{ animationType?: string; delay?: number }>(
   ({ theme, animationType = 'slideUp', delay = 0 }) => {
     const animations = {
       slideUp: slideInFromBottom,
