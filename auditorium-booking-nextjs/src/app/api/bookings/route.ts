@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth-config'
 import connectDB from '@/lib/db'
 import Booking from '@/models/Booking'
 import BlockedTimeSlot from '@/models/BlockedTimeSlot'
-import { isValidTimeSlot } from '@/lib/utils'
+import { isValidTimeSlot, getISTHours, getISTMinutes } from '@/lib/utils'
 import EmailService from '@/lib/emailService'
 
 export async function GET(request: NextRequest) {
@@ -152,33 +152,40 @@ export async function POST(request: NextRequest) {
           { error: 'End time must be after start time' },
           { status: 400 }
         )
-      } else if (start.getHours() < 8 || start.getHours() >= 22) {
-        return NextResponse.json(
-          { error: 'Bookings must start between 8:00 AM and 10:00 PM' },
-          { status: 400 }
-        )
-      } else if (end.getHours() > 23 || (end.getHours() === 23 && end.getMinutes() > 0)) {
-        return NextResponse.json(
-          { error: 'Bookings must end by 11:00 PM' },
-          { status: 400 }
-        )
       } else {
-        const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
-        if (durationHours > 12) {
+        // Convert to IST for error messages
+        const startHourIST = getISTHours(start)
+        const endHourIST = getISTHours(end)
+        const endMinuteIST = getISTMinutes(end)
+        
+        if (startHourIST < 8 || startHourIST >= 22) {
           return NextResponse.json(
-            { error: 'Maximum booking duration is 12 hours' },
+            { error: 'Bookings must start between 8:00 AM and 10:00 PM (IST)' },
             { status: 400 }
           )
-        } else if (durationHours < 0.5) {
+        } else if (endHourIST > 23 || (endHourIST === 23 && endMinuteIST > 0)) {
           return NextResponse.json(
-            { error: 'Minimum booking duration is 30 minutes' },
+            { error: 'Bookings must end by 11:00 PM (IST)' },
             { status: 400 }
           )
         } else {
-          return NextResponse.json(
-            { error: 'Invalid time slot - please check your date and time selection' },
-            { status: 400 }
-          )
+          const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+          if (durationHours > 12) {
+            return NextResponse.json(
+              { error: 'Maximum booking duration is 12 hours' },
+              { status: 400 }
+            )
+          } else if (durationHours < 0.5) {
+            return NextResponse.json(
+              { error: 'Minimum booking duration is 30 minutes' },
+              { status: 400 }
+            )
+          } else {
+            return NextResponse.json(
+              { error: 'Invalid time slot - please check your date and time selection' },
+              { status: 400 }
+            )
+          }
         }
       }
     }

@@ -295,16 +295,14 @@ export default function DashboardPage() {
               
               if (startTime <= now) {
                 setFormError('Please select a future date and time for your booking')
-              } else if (startTime.getHours() < 8 || endTime.getHours() > 22) {
-                setFormError('Bookings are only allowed between 8:00 AM and 10:00 PM')
-              } else if (endTime <= startTime) {
-                setFormError('End time must be after start time')
               } else {
                 const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
                 if (durationHours > 12) {
                   setFormError('Maximum booking duration is 12 hours')
+                } else if (endTime <= startTime) {
+                  setFormError('End time must be after start time')
                 } else {
-                  setFormError('Please check your date and time selection')
+                  setFormError('Please check your date and time selection (Note: Times are validated in IST)')
                 }
               }
             } else {

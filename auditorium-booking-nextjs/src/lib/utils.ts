@@ -2,6 +2,23 @@
  * Utility functions for common operations
  */
 
+// Timezone configuration for IST (Indian Standard Time)
+export const IST_OFFSET = 5.5 * 60 * 60 * 1000 // 5.5 hours in milliseconds
+
+export function convertToIST(date: Date): Date {
+  return new Date(date.getTime() + IST_OFFSET)
+}
+
+export function getISTHours(date: Date): number {
+  const istDate = convertToIST(date)
+  return istDate.getUTCHours()
+}
+
+export function getISTMinutes(date: Date): number {
+  const istDate = convertToIST(date)
+  return istDate.getUTCMinutes()
+}
+
 export function generateVerificationCode(bookingId: string): string {
   const timestamp = Date.now().toString(36)
   return `BK-${bookingId.slice(-6).toUpperCase()}-${timestamp.toUpperCase()}`
@@ -16,8 +33,7 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
     now: now.toISOString(),
     start: start.toISOString(),
     end: end.toISOString(),
-    startHour: start.getHours(),
-    endHour: end.getHours()
+    environment: process.env.NODE_ENV
   })
 
   // Check if start time is in the future (allow some buffer for processing time)
@@ -33,20 +49,28 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
     return false
   }
 
-  // Check if booking starts within business hours (8 AM to 10 PM)
-  // End time can go up to 11 PM (22:59) to allow events that end at 10 PM
-  const startHour = start.getHours()
-  const endHour = end.getHours()
-  const endMinute = end.getMinutes()
+  // Get IST hours and minutes for business hours validation
+  const startHourIST = getISTHours(start)
+  const endHourIST = getISTHours(end)
+  const endMinuteIST = getISTMinutes(end)
 
-  if (startHour < 8 || startHour >= 22) {
-    console.log('Validation failed: Start time outside business hours (8 AM - 10 PM)')
+  console.log('IST conversion:', {
+    startIST: convertToIST(start).toISOString(),
+    endIST: convertToIST(end).toISOString(),
+    startHourIST,
+    endHourIST,
+    endMinuteIST
+  })
+
+  // Check if booking starts within business hours (8 AM to 10 PM IST)
+  if (startHourIST < 8 || startHourIST >= 22) {
+    console.log('Validation failed: Start time outside business hours (8 AM - 10 PM IST)')
     return false
   }
 
-  // Allow end time up to 11 PM (23:00) to accommodate events ending at 10 PM
-  if (endHour > 23 || (endHour === 23 && endMinute > 0)) {
-    console.log('Validation failed: End time too late (after 11 PM)')
+  // Allow end time up to 11 PM (23:00) IST to accommodate events ending at 10 PM
+  if (endHourIST > 23 || (endHourIST === 23 && endMinuteIST > 0)) {
+    console.log('Validation failed: End time too late (after 11 PM IST)')
     return false
   }
 
