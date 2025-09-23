@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth-config'
+import { logger } from '@/lib/logger'
 
 export async function POST() {
   try {
@@ -24,7 +25,7 @@ export async function POST() {
       },
     })
   } catch (error) {
-    console.error('Token verification error:', error)
+    logger.error('Token verification error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -53,7 +54,7 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Get user error:', error)
+    logger.error('Get user error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

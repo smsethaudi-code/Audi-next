@@ -6,12 +6,23 @@ import Booking from '@/models/Booking'
 import BlockedTimeSlot from '@/models/BlockedTimeSlot'
 import { isValidTimeSlot, getISTHours, getISTMinutes } from '@/lib/utils'
 import EmailService from '@/lib/emailService'
+import { logger, checkRateLimit, validate, sanitizeApiResponse } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session || !session.user) {
+      logger.warn('Unauthorized booking fetch attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting - 100 requests per minute for calendar data
+    const userIdentifier = session.user.id || session.user.email || 'anonymous'
+    if (!checkRateLimit(`bookings_${userIdentifier}`, 100, 60000)) {
+      logger.warn('Rate limit exceeded for booking fetch', { user: userIdentifier })
+      return NextResponse.json({ 
+        error: 'Too many requests. Please try again later.' 
+      }, { status: 429 })
     }
 
     await connectDB()
@@ -20,6 +31,17 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+
+    // Input validation
+    if (startDate && !validate.dateTime(startDate)) {
+      logger.warn('Invalid start date format', { startDate })
+      return NextResponse.json({ error: 'Invalid start date format' }, { status: 400 })
+    }
+
+    if (endDate && !validate.dateTime(endDate)) {
+      logger.warn('Invalid end date format', { endDate })
+      return NextResponse.json({ error: 'Invalid end date format' }, { status: 400 })
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = {
@@ -69,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ bookings: allItems })
   } catch (error) {
-    console.error('Get bookings error:', error)
+    logger.error('Get bookings error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -80,8 +102,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session || !session.user) {
+      logger.warn('Unauthorized booking creation attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting - 5 booking requests per hour per user
+    const userIdentifier = session.user.id || session.user.email || 'anonymous'
+    if (!checkRateLimit(`create_booking_${userIdentifier}`, 5, 3600000)) {
+      logger.warn('Rate limit exceeded for booking creation', { user: userIdentifier })
+      return NextResponse.json({ 
+        error: 'Too many booking requests. Please try again later.' 
+      }, { status: 429 })
     }
 
     await connectDB()
@@ -103,16 +135,43 @@ export async function POST(request: NextRequest) {
       externalServices
     } = body
 
-    // Validate required fields
+    // Enhanced input validation
     if (!eventName || !eventType || !eventDescription || !participantCount || !startTime || !endTime || !instituteName || !coordinatorPhone) {
+      logger.warn('Missing required fields in booking request', { user: userIdentifier })
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
+    // Sanitize string inputs
+    const sanitizedEventName = validate.sanitizeInput(eventName)
+    const sanitizedEventType = validate.sanitizeInput(eventType)
+    const sanitizedInstituteName = validate.sanitizeInput(instituteName)
+
+    if (!sanitizedEventName || !sanitizedEventType || !sanitizedInstituteName) {
+      logger.warn('Invalid input detected in booking request', { user: userIdentifier })
+      return NextResponse.json(
+        { error: 'Invalid input detected' },
+        { status: 400 }
+      )
+    }
+
+    // Validate time formats
+    if (!validate.dateTime(startTime) || !validate.dateTime(endTime)) {
+      logger.warn('Invalid date/time format in booking request', { user: userIdentifier })
+      return NextResponse.json(
+        { error: 'Invalid date/time format' },
+        { status: 400 }
+      )
+    }
+
     // Validate participant count
-    if (participantCount < 1 || participantCount > 1000) {
+    if (!validate.positiveNumber(participantCount) || participantCount > 1000) {
+      logger.warn('Invalid participant count', { 
+        user: userIdentifier, 
+        participantCount 
+      })
       return NextResponse.json(
         { error: 'Participant count must be between 1 and 1000' },
         { status: 400 }
@@ -121,6 +180,7 @@ export async function POST(request: NextRequest) {
 
     // Validate phone number
     if (!/^\d{10}$/.test(coordinatorPhone)) {
+      logger.warn('Invalid phone number format', { user: userIdentifier })
       return NextResponse.json(
         { error: 'Phone number must be 10 digits' },
         { status: 400 }
@@ -130,7 +190,7 @@ export async function POST(request: NextRequest) {
     const start = new Date(startTime)
     const end = new Date(endTime)
 
-    console.log('Booking request time validation:', {
+    logger.debug('Booking request time validation', {
       startTime,
       endTime,
       parsedStart: start.toISOString(),
@@ -279,7 +339,7 @@ export async function POST(request: NextRequest) {
         await emailService.sendInternalBookingReceived(emailData)
       }
     } catch (emailError) {
-      console.error('Email notification error:', emailError)
+      logger.error('Email notification error', emailError)
       // Don't fail the booking creation if email fails
     }
 
@@ -289,7 +349,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Create booking error:', error)
+    logger.error('Create booking error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

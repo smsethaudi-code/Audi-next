@@ -313,7 +313,7 @@ export default function DashboardPage() {
           }
         }
       } catch (error) {
-        console.error('Error saving booking:', error)
+        // Error handled silently in production
         setFormError('Failed to save booking. Please try again.')
       } finally {
         setFormSubmitting(false)
@@ -342,7 +342,7 @@ export default function DashboardPage() {
         setBookings(data.bookings)
       }
     } catch (error) {
-      console.error('Error fetching bookings:', error)
+      // Error handled silently in production
     } finally {
       setLoading(false)
     }
@@ -362,7 +362,7 @@ export default function DashboardPage() {
         setAllBookings([])
       }
     } catch (error) {
-      console.error('Error fetching all bookings:', error)
+      // Error handled silently in production
       setAllBookings([])
     }
   }
@@ -426,7 +426,7 @@ export default function DashboardPage() {
         await fetchAllBookings()
       }
     } catch (error) {
-      console.error('Error deleting booking:', error)
+      // Error handled silently in production
     }
   }
 
@@ -456,10 +456,10 @@ export default function DashboardPage() {
         await fetchAllBookings()
       } else {
         const data = await response.json()
-        console.error('Error cancelling booking:', data.error)
+        // Error handled silently in production
       }
     } catch (error) {
-      console.error('Error cancelling booking:', error)
+      // Error handled silently in production
     }
   }
 
