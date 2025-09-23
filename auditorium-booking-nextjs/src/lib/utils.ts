@@ -1,6 +1,7 @@
 /**
  * Utility functions for common operations
  */
+import { logger } from './logger'
 
 // Timezone configuration for IST (Indian Standard Time)
 export const IST_OFFSET = 5.5 * 60 * 60 * 1000 // 5.5 hours in milliseconds
@@ -29,7 +30,7 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
   const start = new Date(startTime)
   const end = new Date(endTime)
 
-  console.log('Time validation:', {
+  logger.debug('Time validation', {
     now: now.toISOString(),
     start: start.toISOString(),
     end: end.toISOString(),
@@ -39,13 +40,13 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
   // Check if start time is in the future (allow some buffer for processing time)
   const oneMinuteAgo = new Date(now.getTime() - 60000) // 1 minute buffer
   if (start <= oneMinuteAgo) {
-    console.log('Validation failed: Start time is not in the future')
+    logger.debug('Validation failed: Start time is not in the future')
     return false
   }
 
   // Check if end time is after start time
   if (end <= start) {
-    console.log('Validation failed: End time is not after start time')
+    logger.debug('Validation failed: End time is not after start time')
     return false
   }
 
@@ -54,7 +55,7 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
   const endHourIST = getISTHours(end)
   const endMinuteIST = getISTMinutes(end)
 
-  console.log('IST conversion:', {
+  logger.debug('IST conversion', {
     startIST: convertToIST(start).toISOString(),
     endIST: convertToIST(end).toISOString(),
     startHourIST,
@@ -64,30 +65,30 @@ export function isValidTimeSlot(startTime: Date, endTime: Date): boolean {
 
   // Check if booking starts within business hours (8 AM to 10 PM IST)
   if (startHourIST < 8 || startHourIST >= 22) {
-    console.log('Validation failed: Start time outside business hours (8 AM - 10 PM IST)')
+    logger.debug('Validation failed: Start time outside business hours (8 AM - 10 PM IST)')
     return false
   }
 
   // Allow end time up to 11 PM (23:00) IST to accommodate events ending at 10 PM
   if (endHourIST > 23 || (endHourIST === 23 && endMinuteIST > 0)) {
-    console.log('Validation failed: End time too late (after 11 PM IST)')
+    logger.debug('Validation failed: End time too late (after 11 PM IST)')
     return false
   }
 
   // Check if duration is reasonable (max 12 hours)
   const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60)
   if (durationHours > 12) {
-    console.log('Validation failed: Duration exceeds 12 hours')
+    logger.debug('Validation failed: Duration exceeds 12 hours')
     return false
   }
 
   // Minimum duration check (at least 30 minutes)
   if (durationHours < 0.5) {
-    console.log('Validation failed: Duration less than 30 minutes')
+    logger.debug('Validation failed: Duration less than 30 minutes')
     return false
   }
 
-  console.log('Time validation passed')
+  logger.debug('Time validation passed')
   return true
 }
 

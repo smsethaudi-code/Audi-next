@@ -36,7 +36,7 @@ const LoginPage = () => {
       setIsLoading(true);
       await signIn('google', { callbackUrl: '/dashboard' });
     } catch (error) {
-      console.error('Login error:', error);
+      // Silent error handling in production
     } finally {
       setIsLoading(false);
     }
