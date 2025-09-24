@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer'
 import * as QRCode from 'qrcode'
-import { logger } from './logger'
 
 interface BookingEmailData {
   bookingId: string
@@ -74,11 +73,15 @@ class EmailService {
     const verificationCode = `${data.bookingId}-${data.eventName}-${new Date(data.startTime).getTime()}`
     const verificationHash = Buffer.from(verificationCode).toString('base64')
 
-    // Only include essential data in QR code for security
     const qrData = JSON.stringify({
-      bid: data.bookingId, // Shortened field names to reduce QR size
-      vc: verificationHash, // Verification code only
-      ts: new Date(data.startTime).getTime() // Timestamp for validation
+      bookingId: data.bookingId,
+      eventName: data.eventName,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      eventType: data.eventType,
+      participantCount: data.participantCount,
+      verificationCode: verificationHash,
+      generatedAt: new Date().toISOString()
     })
 
     // Generate QR code as buffer
@@ -91,7 +94,6 @@ class EmailService {
       }
     })
 
-    logger.debug('QR code generated for email')
     return qrCodeBuffer
   }
 
@@ -414,7 +416,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending internal booking received email', error)
+      console.error('Error sending internal booking received email:', error)
       return false
     }
   }
@@ -471,7 +473,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending external booking received email', error)
+      console.error('Error sending external booking received email:', error)
       return false
     }
   }
@@ -546,7 +548,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending external partially approved email', error)
+      console.error('Error sending external partially approved email:', error)
       return false
     }
   }
@@ -637,7 +639,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending external approved email', error)
+      console.error('Error sending external approved email:', error)
       return false
     }
   }
@@ -718,7 +720,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending admin cancelled email', error)
+      console.error('Error sending admin cancelled email:', error)
       return false
     }
   }
@@ -803,7 +805,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending user cancelled email', error)
+      console.error('Error sending user cancelled email:', error)
       return false
     }
   }
@@ -886,7 +888,7 @@ class EmailService {
 
       return true
     } catch (error) {
-      logger.error('Error sending internal approved email', error)
+      console.error('Error sending internal approved email:', error)
       return false
     }
   }

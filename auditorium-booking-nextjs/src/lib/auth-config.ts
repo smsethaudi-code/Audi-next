@@ -2,7 +2,6 @@ import GoogleProvider from 'next-auth/providers/google'
 import { AuthOptions } from 'next-auth'
 import connectDB from '@/lib/db'
 import User from '@/models/User'
-import { logger } from './logger'
 
 export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -42,7 +41,7 @@ export const authOptions: AuthOptions = {
         token.userId = dbUser._id.toString()
         token.picture = user.image
         token.name = user.name
-        token.email = user.email // Keep email in token for internal use
+        token.email = user.email
       }
       return token
     },
@@ -51,11 +50,6 @@ export const authOptions: AuthOptions = {
         session.user.role = token.role as string
         session.user.id = token.userId as string
         session.user.image = token.picture as string
-        session.user.name = token.name as string
-        
-        // Remove email from session response for security
-        // Email is kept in JWT token for internal API use but not exposed to client
-        delete session.user.email
       }
       return session
     },
@@ -73,10 +67,10 @@ export const authOptions: AuthOptions = {
   },
   events: {
     async signIn({ user, account, profile }) {
-      logger.info('User signed in', { userRole: user.email ? 'authenticated' : 'unknown' })
+      console.log('User signed in:', user.email)
     },
     async signOut({ session }) {
-      logger.info('User signed out')
+      console.log('User signed out')
     },
   },
 }
