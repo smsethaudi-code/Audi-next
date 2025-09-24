@@ -276,7 +276,7 @@ export default function AdminDashboard() {
       setBookings(filteredBookings)
       setTotalBookings(filteredBookings.length)
     } catch (error) {
-      // Error handled silently in production
+      console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
         setCancellationReason('')
       }
     } catch (error) {
-      // Error handled silently in production
+      console.error('Error updating booking:', error)
     }
   }
 
@@ -325,7 +325,7 @@ export default function AdminDashboard() {
         setBlockTimeData({ startTime: '', endTime: '', reason: '' })
       }
     } catch (error) {
-      // Error handled silently in production
+      console.error('Error blocking time:', error)
     }
   }
 
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
         await fetchBookings()
       }
     } catch (error) {
-      // Error handled silently in production
+      console.error('Error removing blocked slot:', error)
     }
   }
 
@@ -356,10 +356,10 @@ export default function AdminDashboard() {
       await fetchBookings()
       
       // Show success message (you could add a toast notification here)
-      // Verification handled silently in production
+      console.log('Booking verified successfully:', verificationData)
       
     } catch (error) {
-      // Error handled silently in production
+      console.error('Error updating booking status:', error)
     }
   }
 

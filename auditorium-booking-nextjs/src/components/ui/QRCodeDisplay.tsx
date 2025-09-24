@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Box, Typography, Paper, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 import QRCode from 'qrcode'
 import { QrCode as QrCodeIcon, Download as DownloadIcon } from '@mui/icons-material'
-import { logger } from '@/lib/logger'
 
 interface QRCodeDisplayProps {
   bookingId: string
@@ -33,11 +32,15 @@ export default function QRCodeDisplay({
   const verificationCode = `${bookingId}-${eventName}-${new Date(startTime).getTime()}`
   const verificationHash = Buffer.from(verificationCode).toString('base64')
 
-  // Only include essential data in QR code for security
   const qrData = JSON.stringify({
-    bid: bookingId, // Shortened field names
-    vc: verificationHash, // Verification code only
-    ts: new Date(startTime).getTime() // Timestamp for validation
+    bookingId,
+    eventName,
+    startTime,
+    endTime,
+    eventType,
+    participantCount,
+    verificationCode: verificationHash,
+    generatedAt: new Date().toISOString()
   })
 
   useEffect(() => {
@@ -56,9 +59,8 @@ export default function QRCodeDisplay({
         }
       })
       setQrCodeUrl(url)
-      logger.debug('QR code generated successfully')
     } catch (error) {
-      logger.error('Error generating QR code', error)
+      console.error('Error generating QR code:', error)
     } finally {
       setLoading(false)
     }
