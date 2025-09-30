@@ -50,7 +50,8 @@ class EmailService {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: '2-digit',
       day: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'Asia/Kolkata' // IST timezone
     })
   }
 
@@ -58,7 +59,8 @@ class EmailService {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: true,
+      timeZone: 'Asia/Kolkata' // IST timezone
     })
   }
 
