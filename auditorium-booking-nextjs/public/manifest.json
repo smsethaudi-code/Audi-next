@@ -3,6 +3,7 @@
   "short_name": "Poornima Auditorium",
   "description": "Official auditorium booking platform for Poornima Group of Colleges - ज्ञानम् विना न किमपि साध्यम्",
   "start_url": "/?source=pwa",
+  "id": "/?source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1e40af",
@@ -11,7 +12,13 @@
   "lang": "en",
   "categories": ["education", "business", "productivity"],
   "dir": "ltr",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "/favicon.svg",
@@ -110,7 +117,45 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "My Bookings",
+      "short_name": "Bookings",
+      "description": "View your booking history",
+      "url": "/dashboard?tab=bookings",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "protocol_handlers": [
+    {
+      "protocol": "web+auditorium",
+      "url": "/dashboard?booking=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/dashboard",
+      "accept": {
+        "text/plain": [".txt"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/dashboard",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

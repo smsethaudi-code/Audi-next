@@ -6,6 +6,7 @@ import ThemeProvider from "@/components/providers/ThemeProvider";
 import Footer from "@/components/ui/Footer";
 import PWAInstallPrompt from "@/components/ui/PWAInstallPrompt";
 import PWAInstallSuccess from "@/components/ui/PWAInstallSuccess";
+import PWASplashScreen from "@/components/ui/PWASplashScreen";
 
 // Font configurations for academic design
 const inter = Inter({
@@ -101,6 +102,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ThemeProvider>
+            <PWASplashScreen />
             {children}
             <Footer />
             <PWAInstallPrompt />
