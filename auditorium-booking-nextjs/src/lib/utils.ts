@@ -19,6 +19,20 @@ export function getISTMinutes(date: Date): number {
   return istDate.getUTCMinutes()
 }
 
+// YYYY-MM-DD in IST - a format spreadsheets recognise as a date
+export function formatISTDate(date: Date): string {
+  return convertToIST(date).toISOString().slice(0, 10)
+}
+
+export function formatISTTime(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
+  })
+}
+
 export function generateVerificationCode(bookingId: string): string {
   const timestamp = Date.now().toString(36)
   return `BK-${bookingId.slice(-6).toUpperCase()}-${timestamp.toUpperCase()}`
