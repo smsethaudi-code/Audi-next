@@ -61,8 +61,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - static files from the public folder (manifest.json, sw.js, workbox-*.js, icons, robots.txt, ...)
+     *   Browsers fetch the PWA manifest without cookies, so these must never require login
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:json|js|png|jpg|jpeg|gif|svg|ico|webp|txt|xml)$).*)',
   ],
 }

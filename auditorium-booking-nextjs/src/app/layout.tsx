@@ -75,10 +75,9 @@ export default function RootLayout({
         {/* Viewport for mobile */}
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover" />
 
-        {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+        {/* Apple Touch Icons (white background - iOS turns transparent corners black) */}
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
 
         {/* Favicon */}
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -87,6 +86,14 @@ export default function RootLayout({
 
         {/* Manifest */}
         <link rel="manifest" href="/manifest.json" />
+
+        {/* Capture Chrome's one-time install event before React loads - the app is hidden
+            behind the preloader for 3s, so PWAInstallPrompt mounts too late to catch it */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});",
+          }}
+        />
 
         {/* Microsoft Tags */}
         <meta name="msapplication-config" content="/browserconfig.xml" />
