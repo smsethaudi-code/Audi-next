@@ -101,6 +101,15 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    if (action === 'all') {
+      // Lifetime list for the admin dashboard - filtering, pagination and CSV export happen client-side
+      const allBookings = await Booking.find()
+        .sort({ startTime: -1 })
+        .lean()
+
+      return NextResponse.json({ bookings: allBookings })
+    }
+
     if (action === 'pending') {
       // Get pending bookings for approval
       const pendingBookings = await Booking.find({ status: 'PENDING' })

@@ -43,11 +43,14 @@ import {
   Block as BlockIcon,
   Event as EventIcon,
   Pending as PendingIcon,
-  QrCodeScanner as QrIcon
+  QrCodeScanner as QrIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QRVerification from '@/components/features/admin/QRVerification'
+import { toCsv, downloadCsv } from '@/lib/csv'
+import { formatISTDate, formatISTTime } from '@/lib/utils'
 
 interface Booking {
   _id: string
@@ -95,13 +98,6 @@ interface BlockedTimeSlot {
 
 interface BookingsApiResponse {
   bookings: Booking[]
-  pagination?: {
-    total: number
-    page: number
-    totalPages: number
-    hasNext: boolean
-    hasPrev: boolean
-  }
 }
 
 interface BlockedSlotsApiResponse {
@@ -159,10 +155,11 @@ export default function AdminDashboard() {
   // Pagination and filtering state
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [totalBookings, setTotalBookings] = useState(0)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [dateFilter, setDateFilter] = useState('ALL') // ALL, UPCOMING, PAST
-  
+  const [fromDate, setFromDate] = useState('') // YYYY-MM-DD, filters on event start date
+  const [toDate, setToDate] = useState('')
+
   const [actionDialog, setActionDialog] = useState<{
     open: boolean
     type: 'approve' | 'partial-approve' | 'reject' | 'view' | 'cancel' | null
@@ -180,101 +177,28 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchBookings()
-  }, [currentPage, pageSize, statusFilter, dateFilter])
+  }, [])
 
   const fetchBookings = async () => {
     try {
       setLoading(true)
-      
-      // Build query parameters for pagination and filtering
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: pageSize.toString()
-      })
-      
-      if (statusFilter !== 'ALL' && statusFilter !== 'BLOCKED') {
-        params.append('status', statusFilter)
-      }
-      
-      // Fetch bookings with pagination
-      const bookingsResponse = await fetch(`/api/admin/bookings?${params}`)
-      let allFetchedBookings: Booking[] = []
-      let totalCount = 0
-      
+
+      // Load every booking once - stats, the Pending tab, filters, pagination
+      // and CSV export all work from this full list
+      const [bookingsResponse, blockedResponse] = await Promise.all([
+        fetch('/api/admin/bookings?action=all'),
+        fetch('/api/bookings/block')
+      ])
+
       if (bookingsResponse.ok) {
         const bookingsData: BookingsApiResponse = await bookingsResponse.json()
-        allFetchedBookings = [...bookingsData.bookings]
-        totalCount = bookingsData.pagination?.total || 0
+        setBookings(bookingsData.bookings)
       }
 
-      // Fetch blocked time slots if needed
-      const blockedResponse = await fetch('/api/bookings/block')
-      let blockedSlots: BlockedTimeSlot[] = []
       if (blockedResponse.ok) {
         const blockedData: BlockedSlotsApiResponse = await blockedResponse.json()
-        blockedSlots = blockedData.blockedSlots || []
-        setBlockedSlots(blockedSlots)
-        
-        // Include blocked slots in the display if filter allows
-        if (statusFilter === 'ALL' || statusFilter === 'BLOCKED') {
-          const transformedBlockedSlots = blockedSlots.map((slot: BlockedTimeSlot) => ({
-            _id: `blocked_${slot._id}`,
-            eventName: `BLOCKED: ${slot.reason}`,
-            eventType: 'Time Block',
-            eventDescription: slot.reason,
-            userName: 'Administrator',
-            userEmail: 'admin',
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            status: 'BLOCKED',
-            createdAt: slot.createdAt,
-            participantCount: 0,
-            isBlockedSlot: true,
-            originalBlockedSlot: slot,
-            rejectionReason: '',
-            specialRequirements: '',
-            instituteName: 'Admin',
-            coordinatorPhone: 'N/A',
-            extraTimePre: 0,
-            extraTimePost: 0,
-            isExternal: false,
-            totalCost: 0,
-            externalServices: {}
-          } as Booking))
-          
-          if (statusFilter === 'BLOCKED') {
-            // Show only blocked slots
-            allFetchedBookings = transformedBlockedSlots
-            totalCount = transformedBlockedSlots.length
-          } else {
-            // Show both bookings and blocked slots
-            allFetchedBookings = [...allFetchedBookings, ...transformedBlockedSlots]
-            totalCount += transformedBlockedSlots.length
-          }
-        }
+        setBlockedSlots(blockedData.blockedSlots || [])
       }
-      
-      // Apply date filter on the client side
-      let filteredBookings = allFetchedBookings
-      if (dateFilter === 'UPCOMING') {
-        const now = new Date()
-        filteredBookings = allFetchedBookings.filter((booking: Booking) => 
-          new Date(booking.startTime) > now
-        )
-      } else if (dateFilter === 'PAST') {
-        const now = new Date()
-        filteredBookings = allFetchedBookings.filter((booking: Booking) => 
-          new Date(booking.startTime) < now
-        )
-      }
-      
-      // Sort by start time
-      filteredBookings.sort((a: Booking, b: Booking) => 
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-      )
-      
-      setBookings(filteredBookings)
-      setTotalBookings(filteredBookings.length)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -549,17 +473,21 @@ export default function AdminDashboard() {
     </Paper>
   )
 
-  const pendingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'PARTIALLY_APPROVED')
+  const pendingBookings = bookings
+    .filter(b => b.status === 'PENDING' || b.status === 'PARTIALLY_APPROVED')
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
   const partiallyApprovedBookings = bookings.filter(b => b.status === 'PARTIALLY_APPROVED')
-  
-  // Transform blocked slots to match booking structure for display
-  const transformedBlockedSlots = blockedSlots.map(slot => ({
-    _id: slot._id,
-    eventName: `🚫 BLOCKED: ${slot.reason}`,
+  const approvedBookings = bookings.filter(b => b.status === 'APPROVED')
+  const rejectedBookings = bookings.filter(b => b.status === 'REJECTED' || b.status === 'CANCELLED')
+
+  // Blocked time slots are listed alongside bookings in the All Bookings tab
+  const blockedSlotRows: Booking[] = blockedSlots.map(slot => ({
+    _id: `blocked_${slot._id}`,
+    eventName: `BLOCKED: ${slot.reason}`,
     eventType: 'Time Block',
     eventDescription: slot.reason,
-    userName: slot.blockedByName || 'Admin',
-    userEmail: 'N/A',
+    userName: 'Administrator',
+    userEmail: 'admin',
     startTime: slot.startTime,
     endTime: slot.endTime,
     status: 'BLOCKED',
@@ -567,25 +495,116 @@ export default function AdminDashboard() {
     participantCount: 0,
     isBlockedSlot: true,
     originalBlockedSlot: slot,
-    // Add missing required fields
     rejectionReason: '',
     specialRequirements: '',
-    instituteName: 'N/A',
+    instituteName: 'Admin',
     coordinatorPhone: 'N/A',
     extraTimePre: 0,
     extraTimePost: 0,
     isExternal: false,
     totalCost: 0,
     externalServices: {}
-  } as any))
-  
-  // Combine bookings and blocked slots, sorted by start time
-  const allBookings = [...bookings, ...transformedBlockedSlots].sort((a, b) => 
-    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  )
-  
-  const approvedBookings = bookings.filter(b => b.status === 'APPROVED')
-  const rejectedBookings = bookings.filter(b => b.status === 'REJECTED' || b.status === 'CANCELLED')
+  }))
+
+  // All Bookings tab filters: status, upcoming/past and a from/to date range on the event start
+  const now = new Date()
+  const rangeStart = fromDate ? new Date(`${fromDate}T00:00:00`) : null
+  const rangeEnd = toDate ? new Date(`${toDate}T23:59:59.999`) : null
+  const invalidRange = Boolean(rangeStart && rangeEnd && rangeStart > rangeEnd)
+  const hasActiveFilters = statusFilter !== 'ALL' || dateFilter !== 'ALL' || Boolean(fromDate) || Boolean(toDate)
+
+  const statusFilteredBookings =
+    statusFilter === 'ALL' ? [...bookings, ...blockedSlotRows] :
+    statusFilter === 'BLOCKED' ? blockedSlotRows :
+    bookings.filter(b => b.status === statusFilter)
+
+  const filteredBookings = statusFilteredBookings
+    .filter(b => {
+      const start = new Date(b.startTime)
+      if (dateFilter === 'UPCOMING' && start <= now) return false
+      if (dateFilter === 'PAST' && start >= now) return false
+      if (rangeStart && start < rangeStart) return false
+      if (rangeEnd && start > rangeEnd) return false
+      return true
+    })
+    // Upcoming: soonest first. Otherwise: latest first
+    .sort((a, b) => dateFilter === 'UPCOMING'
+      ? new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+      : new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+
+  const pageCount = Math.max(1, Math.ceil(filteredBookings.length / pageSize))
+  const page = Math.min(currentPage, pageCount)
+  const pagedBookings = filteredBookings.slice((page - 1) * pageSize, page * pageSize)
+
+  const clearFilters = () => {
+    setStatusFilter('ALL')
+    setDateFilter('ALL')
+    setFromDate('')
+    setToDate('')
+    setCurrentPage(1)
+  }
+
+  const handleExportCsv = () => {
+    const serviceLabels: Record<string, string> = {
+      refreshments: 'Refreshments',
+      transport: 'Transport',
+      hostel: 'Hostel',
+      mediaPhotoCoverage: 'Media/Photo Coverage'
+    }
+    const formatDateTime = (value?: string) =>
+      value ? `${formatISTDate(new Date(value))} ${formatISTTime(new Date(value))}` : ''
+
+    const headers = [
+      'Booking ID', 'Event Name', 'Event Type', 'Status',
+      'Date (IST)', 'Start Time (IST)', 'End Time (IST)', 'Duration (hours)',
+      'Extra Time Before (min)', 'Extra Time After (min)', 'Participants',
+      'Organizer Name', 'Organizer Email', 'Institute/Organization', 'Coordinator Phone',
+      'External', 'External Services', 'Special Requirements', 'Description',
+      'Rejection/Cancellation Reason', 'Requested On (IST)', 'Approved On (IST)'
+    ]
+
+    const rows = filteredBookings.map(booking => {
+      const start = new Date(booking.startTime)
+      const end = new Date(booking.endTime)
+      const services = Object.entries(booking.externalServices || {})
+        .filter(([, selected]) => selected)
+        .map(([key]) => serviceLabels[key] || key)
+        .join('; ')
+
+      return [
+        booking._id,
+        booking.eventName,
+        booking.eventType,
+        booking.status,
+        formatISTDate(start),
+        formatISTTime(start),
+        formatISTTime(end),
+        Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60) * 100) / 100,
+        booking.extraTimePre || 0,
+        booking.extraTimePost || 0,
+        booking.participantCount,
+        booking.userName,
+        booking.userEmail,
+        booking.instituteName || '',
+        booking.coordinatorPhone || '',
+        booking.isExternal ? 'Yes' : 'No',
+        services,
+        booking.specialRequirements || '',
+        booking.eventDescription || '',
+        booking.rejectionReason || '',
+        formatDateTime(booking.createdAt),
+        formatDateTime(booking.approvedAt)
+      ]
+    })
+
+    const rangeLabel =
+      fromDate && toDate ? `${fromDate}_to_${toDate}` :
+      fromDate ? `from_${fromDate}` :
+      toDate ? `until_${toDate}` :
+      `all_${formatISTDate(now)}`
+
+    downloadCsv(`auditorium-bookings_${rangeLabel}.csv`, toCsv(headers, rows))
+  }
 
   if (loading) {
     return <LoadingSpinner message="Loading admin dashboard..." />
@@ -721,7 +740,7 @@ export default function AdminDashboard() {
                   }} 
                 />
                 <Box textAlign={{ xs: 'center', sm: 'left' }}>
-                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{allBookings.length}</Typography>
+                  <Typography variant={isSmallMobile ? "h6" : "h5"}>{bookings.length}</Typography>
                   <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                     Total Bookings
                   </Typography>
@@ -779,7 +798,7 @@ export default function AdminDashboard() {
           }}
         >
           <Tab label={isMobile ? `Pending (${pendingBookings.length})` : `Pending & Partial (${pendingBookings.length})`} />
-          <Tab label={isMobile ? `All (${totalBookings})` : `All Bookings (${totalBookings})`} />
+          <Tab label={isMobile ? `All (${filteredBookings.length})` : `All Bookings (${filteredBookings.length})`} />
         </Tabs>
 
         {/* Pending & Partially Approved Requests Tab */}
@@ -916,10 +935,12 @@ export default function AdminDashboard() {
         <TabPanel value={tabValue} index={1}>
           {/* Filter Controls */}
           <Box sx={{ mb: 3 }}>
-            <Stack 
-              direction={{ xs: 'column', md: 'row' }} 
-              spacing={2} 
-              alignItems={{ xs: 'stretch', md: 'center' }}
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'flex-start' }}
+              flexWrap="wrap"
+              useFlexGap
             >
               <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
                 <InputLabel>Status Filter</InputLabel>
@@ -938,6 +959,7 @@ export default function AdminDashboard() {
                   <MenuItem value="APPROVED">Approved</MenuItem>
                   <MenuItem value="REJECTED">Rejected</MenuItem>
                   <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                  <MenuItem value="VERIFIED">Verified</MenuItem>
                   <MenuItem value="BLOCKED">Blocked by Admin</MenuItem>
                 </Select>
               </FormControl>
@@ -958,7 +980,36 @@ export default function AdminDashboard() {
                   <MenuItem value="PAST">Past</MenuItem>
                 </Select>
               </FormControl>
-              
+
+              <TextField
+                type="date"
+                label="From Date"
+                size="small"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value)
+                  setCurrentPage(1)
+                }}
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: { xs: '100%', sm: 160 } }}
+              />
+
+              <TextField
+                type="date"
+                label="To Date"
+                size="small"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value)
+                  setCurrentPage(1)
+                }}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ min: fromDate || undefined }}
+                error={invalidRange}
+                helperText={invalidRange ? 'To Date is before From Date' : undefined}
+                sx={{ minWidth: { xs: '100%', sm: 160 } }}
+              />
+
               <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 120 } }}>
                 <InputLabel>Page Size</InputLabel>
                 <Select
@@ -976,18 +1027,45 @@ export default function AdminDashboard() {
                   <MenuItem value={50}>50 per page</MenuItem>
                 </Select>
               </FormControl>
-              
-              <Typography 
-                variant="body2" 
+            </Stack>
+
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={{ xs: 1, sm: 2 }}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              sx={{ mt: 2 }}
+            >
+              <Typography
+                variant="body2"
                 color="textSecondary"
-                sx={{ 
-                  mt: { xs: 1, md: 0 },
-                  textAlign: { xs: 'center', md: 'left' },
+                sx={{
+                  flexGrow: 1,
+                  textAlign: { xs: 'center', sm: 'left' },
                   fontSize: { xs: '0.75rem', sm: '0.875rem' }
                 }}
               >
-                Showing {Math.min((currentPage - 1) * pageSize + 1, totalBookings)} to {Math.min(currentPage * pageSize, totalBookings)} of {totalBookings} bookings
+                Showing {Math.min((page - 1) * pageSize + 1, filteredBookings.length)} to {Math.min(page * pageSize, filteredBookings.length)} of {filteredBookings.length} bookings
               </Typography>
+              {hasActiveFilters && (
+                <Button
+                  onClick={clearFilters}
+                  size={isMobile ? 'small' : 'medium'}
+                  fullWidth={isSmallMobile}
+                >
+                  Clear Filters
+                </Button>
+              )}
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={handleExportCsv}
+                disabled={filteredBookings.length === 0}
+                size={isMobile ? 'small' : 'medium'}
+                fullWidth={isSmallMobile}
+                title="Download every booking matching the current filters (all pages)"
+              >
+                Export CSV ({filteredBookings.length})
+              </Button>
             </Stack>
           </Box>
 
@@ -995,14 +1073,14 @@ export default function AdminDashboard() {
           {isMobile ? (
             /* Mobile View - Cards */
             <Box sx={{ px: { xs: 0, sm: 1 } }}>
-              {bookings.length === 0 ? (
+              {pagedBookings.length === 0 ? (
                 <Box textAlign="center" py={4}>
                   <Typography variant="body2" color="textSecondary">
                     No bookings found matching the current filters.
                   </Typography>
                 </Box>
               ) : (
-                bookings.map((booking) => (
+                pagedBookings.map((booking) => (
                   <BookingCard key={booking._id} booking={booking} />
                 ))
               )}
@@ -1021,7 +1099,7 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {bookings.length === 0 ? (
+                  {pagedBookings.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} align="center">
                         <Typography variant="body2" color="textSecondary">
@@ -1030,7 +1108,7 @@ export default function AdminDashboard() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    bookings.map((booking) => (
+                    pagedBookings.map((booking) => (
                     <TableRow key={booking._id}>
                       <TableCell>
                         <Typography variant="subtitle2">{booking.eventName}</Typography>
@@ -1097,22 +1175,22 @@ export default function AdminDashboard() {
           )}
 
           {/* Pagination */}
-          {totalBookings > 0 && (
-            <Box sx={{ 
-              mt: 3, 
-              display: 'flex', 
+          {filteredBookings.length > 0 && (
+            <Box sx={{
+              mt: 3,
+              display: 'flex',
               flexDirection: { xs: 'column', sm: 'row' },
-              justifyContent: 'space-between', 
+              justifyContent: 'space-between',
               alignItems: 'center',
               gap: 2
             }}>
               <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                Total: {totalBookings} bookings
+                Total: {filteredBookings.length} bookings
               </Typography>
               <Pagination
-                count={Math.ceil(totalBookings / pageSize)}
-                page={currentPage}
-                onChange={(event, page) => setCurrentPage(page)}
+                count={pageCount}
+                page={page}
+                onChange={(event, newPage) => setCurrentPage(newPage)}
                 color="primary"
                 showFirstButton={!isSmallMobile}
                 showLastButton={!isSmallMobile}
