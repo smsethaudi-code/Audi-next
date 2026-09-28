@@ -33,6 +33,23 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
+    const formatIST = (date: Date) => date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    // QR codes stay scannable for 30 days, so repeat scans of a checked-in booking are expected
+    if (booking.status === 'VERIFIED') {
+      return NextResponse.json({
+        success: false,
+        message: `This booking was already verified${booking.verifiedAt ? ` on ${formatIST(new Date(booking.verifiedAt))}` : ''}`
+      }, { status: 400 })
+    }
+
     // Check if booking is approved
     if (booking.status !== 'APPROVED') {
       return NextResponse.json({ 
@@ -53,16 +70,23 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if verification is happening on the event day or within reasonable time
-    const eventDate = new Date(booking.startTime)
+    // Allow verification from 1 day before the event starts until 30 days after it ends
+    const DAY_MS = 1000 * 60 * 60 * 24
     const currentDate = new Date()
-    const daysDifference = Math.abs((currentDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24))
+    const windowOpens = new Date(new Date(booking.startTime).getTime() - DAY_MS)
+    const windowCloses = new Date(new Date(booking.endTime).getTime() + 30 * DAY_MS)
 
-    // Allow verification 1 day before and 1 day after the event
-    if (daysDifference > 1) {
-      return NextResponse.json({ 
-        success: false, 
-        message: `Verification can only be done within 1 day of the event date (${eventDate.toLocaleDateString()})` 
+    if (currentDate < windowOpens) {
+      return NextResponse.json({
+        success: false,
+        message: `Too early - this QR code can be verified from ${formatIST(windowOpens)}`
+      }, { status: 400 })
+    }
+
+    if (currentDate > windowCloses) {
+      return NextResponse.json({
+        success: false,
+        message: `This QR code expired on ${formatIST(windowCloses)} (30 days after the event)`
       }, { status: 400 })
     }
 

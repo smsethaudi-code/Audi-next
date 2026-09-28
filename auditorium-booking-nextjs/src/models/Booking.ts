@@ -20,6 +20,8 @@ export interface IBooking extends Document {
   verifiedAt?: Date
   participantCount: number
   specialRequirements?: string
+  guestName?: string
+  qSheet?: IQSheetInfo | null
   instituteName: string
   coordinatorPhone: string
   extraTimePre: number
@@ -37,6 +39,24 @@ export interface IBooking extends Document {
   createdAt: Date
   updatedAt: Date
 }
+
+// Metadata of the uploaded Q sheet - the file itself lives in the QSheet collection
+export interface IQSheetInfo {
+  fileName: string
+  contentType: string
+  size: number
+  uploadedAt: Date
+}
+
+const QSheetInfoSchema = new Schema<IQSheetInfo>(
+  {
+    fileName: { type: String, required: true },
+    contentType: { type: String, required: true },
+    size: { type: Number, required: true },
+    uploadedAt: { type: Date, required: true },
+  },
+  { _id: false }
+)
 
 interface IBookingModel extends mongoose.Model<IBooking> {
   checkConflicts(
@@ -90,6 +110,16 @@ const BookingSchema = new Schema<IBooking>(
       type: String,
       trim: true,
       maxlength: 500,
+    },
+    // Required for new bookings by the API; optional here so older bookings stay valid
+    guestName: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
+    qSheet: {
+      type: QSheetInfoSchema,
+      default: null,
     },
     startTime: {
       type: Date,

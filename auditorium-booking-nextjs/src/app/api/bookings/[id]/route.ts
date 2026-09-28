@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth-config'
 import connectDB from '@/lib/db'
 import Booking, { IBooking } from '@/models/Booking'
+import QSheet from '@/models/QSheet'
 import { canApproveBooking } from '@/lib/auth'
 import { generateVerificationCode } from '@/lib/utils'
 import EmailService from '@/lib/emailService'
@@ -72,6 +73,7 @@ export async function PATCH(
       instituteName,
       coordinatorPhone,
       specialRequirements,
+      guestName,
       extraTimePre,
       extraTimePost,
       isExternal,
@@ -149,6 +151,7 @@ export async function PATCH(
       if (instituteName) booking.instituteName = instituteName
       if (coordinatorPhone) booking.coordinatorPhone = coordinatorPhone
       if (specialRequirements !== undefined) booking.specialRequirements = specialRequirements
+      if (typeof guestName === 'string' && guestName.trim()) booking.guestName = guestName.trim()
       if (extraTimePre !== undefined) booking.extraTimePre = parseInt(extraTimePre) || 0
       if (extraTimePost !== undefined) booking.extraTimePost = parseInt(extraTimePost) || 0
       if (isExternal !== undefined) booking.isExternal = Boolean(isExternal)
@@ -261,6 +264,7 @@ export async function DELETE(
     }
 
     await Booking.findByIdAndDelete(id)
+    await QSheet.deleteOne({ bookingId: id })
 
     return NextResponse.json({
       message: 'Booking deleted successfully'
