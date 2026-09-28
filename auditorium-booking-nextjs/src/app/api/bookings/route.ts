@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       extraTimePre = 0,
       extraTimePost = 0,
       specialRequirements,
+      guestName,
       isExternal = false,
       externalServices
     } = body
@@ -107,6 +108,13 @@ export async function POST(request: NextRequest) {
     if (!eventName || !eventType || !eventDescription || !participantCount || !startTime || !endTime || !instituteName || !coordinatorPhone) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    if (typeof guestName !== 'string' || !guestName.trim()) {
+      return NextResponse.json(
+        { error: 'Guest name is required' },
         { status: 400 }
       )
     }
@@ -235,6 +243,7 @@ export async function POST(request: NextRequest) {
       instituteName,
       coordinatorPhone,
       specialRequirements,
+      guestName: guestName.trim(),
       startTime: start,
       endTime: end,
       extraTimePre: parseInt(extraTimePre) || 0,
@@ -261,6 +270,7 @@ export async function POST(request: NextRequest) {
         bookingId: savedBooking._id.toString(),
         eventName: savedBooking.eventName,
         eventType: savedBooking.eventType,
+        guestName: savedBooking.guestName,
         userName: savedBooking.userName,
         userEmail: savedBooking.userEmail,
         startTime: savedBooking.startTime.toISOString(),

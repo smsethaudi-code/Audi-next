@@ -41,6 +41,8 @@ import {
   Divider
 } from '@mui/material'
 import QRCodeDisplay from '@/components/ui/QRCodeDisplay'
+import QSheetUpload from '@/components/ui/QSheetUpload'
+import { QSHEET_UPLOAD_STATUSES } from '@/lib/qsheet'
 import {
   Add as AddIcon,
   Event as EventIcon,
@@ -78,6 +80,10 @@ const localizer = momentLocalizer(moment)
 
 const validationSchema = yup.object({
   eventName: yup.string().required('Event name is required'),
+  guestName: yup.string()
+    .trim()
+    .required('Guest name is required')
+    .max(200, 'Guest name cannot exceed 200 characters'),
   eventType: yup.string().required('Event type is required'),
   eventDescription: yup.string(),
   participantCount: yup.number()
@@ -124,6 +130,12 @@ interface Booking {
   userEmail: string
   participantCount: number
   specialRequirements?: string
+  guestName?: string
+  qSheet?: {
+    fileName: string
+    size: number
+    uploadedAt: string
+  } | null
   instituteName?: string
   coordinatorPhone?: string
   extraTimePre?: number
@@ -196,6 +208,7 @@ export default function DashboardPage() {
   const formik = useFormik({
     initialValues: {
       eventName: '',
+      guestName: '',
       eventType: '',
       eventDescription: '',
       participantCount: '',
@@ -234,6 +247,7 @@ export default function DashboardPage() {
 
         const formattedValues = {
           eventName: values.eventName,
+          guestName: values.guestName.trim(),
           eventType: values.eventType,
           eventDescription: values.eventDescription,
           participantCount: Number(values.participantCount),
@@ -382,6 +396,7 @@ export default function DashboardPage() {
     setEditBookingId(booking._id)
     formik.setValues({
       eventName: booking.eventName,
+      guestName: booking.guestName || '',
       eventType: booking.eventType,
       eventDescription: booking.eventDescription,
       participantCount: booking.participantCount.toString(),
@@ -620,6 +635,18 @@ export default function DashboardPage() {
               endTime={booking.endTime}
               eventType={booking.eventType}
               participantCount={booking.participantCount}
+            />
+          </Box>
+        )}
+
+        {/* Q Sheet - can be uploaded once the booking is approved */}
+        {(QSHEET_UPLOAD_STATUSES.includes(booking.status) || booking.qSheet) && (
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <QSheetUpload
+              bookingId={booking._id}
+              qSheet={booking.qSheet}
+              canUpload={QSHEET_UPLOAD_STATUSES.includes(booking.status)}
+              onUploaded={fetchMyBookings}
             />
           </Box>
         )}
@@ -1213,6 +1240,7 @@ export default function DashboardPage() {
                                   <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Participants</TableCell>
                                   <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Status</TableCell>
                                   <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>QR Code</TableCell>
+                                  <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Q Sheet</TableCell>
                                   <TableCell sx={{ fontWeight: 600, fontSize: '1rem' }}>Actions</TableCell>
                                 </TableRow>
                               </TableHead>
@@ -1278,6 +1306,16 @@ export default function DashboardPage() {
                                           endTime={booking.endTime}
                                           eventType={booking.eventType}
                                           participantCount={booking.participantCount}
+                                        />
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {(QSHEET_UPLOAD_STATUSES.includes(booking.status) || booking.qSheet) && (
+                                        <QSheetUpload
+                                          bookingId={booking._id}
+                                          qSheet={booking.qSheet}
+                                          canUpload={QSHEET_UPLOAD_STATUSES.includes(booking.status)}
+                                          onUploaded={fetchMyBookings}
                                         />
                                       )}
                                     </TableCell>
@@ -1405,7 +1443,24 @@ export default function DashboardPage() {
                     }
                   }}
                 />
-                
+
+                <TextField
+                  fullWidth
+                  name="guestName"
+                  label="Guest Name"
+                  value={formik.values.guestName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.guestName && Boolean(formik.errors.guestName)}
+                  helperText={(formik.touched.guestName && formik.errors.guestName) || 'Chief guest / speaker - separate multiple names with commas'}
+                  inputProps={{ maxLength: 200 }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+
                 <TextField
                   fullWidth
                   select

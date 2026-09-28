@@ -5,6 +5,7 @@ interface BookingEmailData {
   bookingId: string
   eventName: string
   eventType: string
+  guestName?: string
   userName: string
   userEmail: string
   startTime: string
@@ -369,6 +370,12 @@ class EmailService {
                 <span class="detail-label">📝 Event Type:</span>
                 <span class="detail-value">${data.eventType}</span>
             </div>
+            ${data.guestName ? `
+            <div class="detail-row">
+                <span class="detail-label">🎤 Guest Name:</span>
+                <span class="detail-value">${data.guestName}</span>
+            </div>
+            ` : ''}
             <div class="detail-row">
                 <span class="detail-label">👤 Requested By:</span>
                 <span class="detail-value">${data.userName}</span>
@@ -436,6 +443,12 @@ class EmailService {
         <div class="booking-details">
             <h3>📋 Booking Details <span class="status-badge status-received">Request Received</span></h3>
             <p><strong>Dr. SM Seth Auditorium, Poornima Group, PIET Campus, ISI-2, RIICO Institutional Area, Sitapura, Jaipur - 302022</strong></p>
+            ${data.guestName ? `
+            <div class="detail-row">
+                <span class="detail-label">🎤 Guest Name:</span>
+                <span class="detail-value">${data.guestName}</span>
+            </div>
+            ` : ''}
             <div class="detail-row">
                 <span class="detail-label">📆 Date:</span>
                 <span class="detail-value">${this.formatDate(data.startTime)}</span>
@@ -891,6 +904,77 @@ class EmailService {
       return true
     } catch (error) {
       console.error('Error sending internal approved email:', error)
+      return false
+    }
+  }
+
+  // Organizer uploaded (or replaced) the Q sheet - sent to admin with the file attached
+  async sendQSheetUploaded(
+    data: BookingEmailData,
+    file: { fileName: string; content: Buffer; contentType: string }
+  ): Promise<boolean> {
+    try {
+      const content = `
+        <div class="greeting">Dear Admin,</div>
+
+        <p>The organizer has uploaded the Q sheet for <strong>${data.eventName}</strong>. The file is attached to this email and can also be downloaded from the booking details in the admin panel.</p>
+
+        <div class="booking-details">
+            <h3>📋 Event Details <span class="status-badge status-approved">Q Sheet Uploaded</span></h3>
+            <div class="detail-row">
+                <span class="detail-label">📅 Event Name:</span>
+                <span class="detail-value">${data.eventName}</span>
+            </div>
+            ${data.guestName ? `
+            <div class="detail-row">
+                <span class="detail-label">🎤 Guest Name:</span>
+                <span class="detail-value">${data.guestName}</span>
+            </div>
+            ` : ''}
+            <div class="detail-row">
+                <span class="detail-label">👤 Organizer:</span>
+                <span class="detail-value">${data.userName}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📧 Email:</span>
+                <span class="detail-value">${data.userEmail}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📆 Date:</span>
+                <span class="detail-value">${this.formatDate(data.startTime)}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">🕒 Time:</span>
+                <span class="detail-value">${this.formatTime(data.startTime)} - ${this.formatTime(data.endTime)}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">👥 Attendees:</span>
+                <span class="detail-value">${data.participantCount}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">📎 Q Sheet:</span>
+                <span class="detail-value">${file.fileName}</span>
+            </div>
+        </div>
+      `
+
+      await this.transporter.sendMail({
+        from: `"S.M Seth Auditorium" <${process.env.EMAIL_FROM || 'noreply@poornima.org'}>`,
+        to: 'smsethaudi@poornima.org',
+        subject: `Q Sheet Uploaded - ${data.eventName} - Dr. SM Seth Auditorium`,
+        html: this.getEmailTemplate(content),
+        attachments: [
+          {
+            filename: file.fileName,
+            content: file.content,
+            contentType: file.contentType
+          }
+        ]
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error sending Q sheet uploaded email:', error)
       return false
     }
   }

@@ -51,6 +51,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QRVerification from '@/components/features/admin/QRVerification'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import { formatISTDate, formatISTTime } from '@/lib/utils'
+import { formatFileSize } from '@/lib/qsheet'
 
 interface Booking {
   _id: string
@@ -64,6 +65,12 @@ interface Booking {
   userEmail: string
   participantCount: number
   specialRequirements?: string
+  guestName?: string
+  qSheet?: {
+    fileName: string
+    size: number
+    uploadedAt: string
+  } | null
   rejectionReason?: string
   approvedBy?: string
   approvedAt?: string
@@ -555,12 +562,12 @@ export default function AdminDashboard() {
       value ? `${formatISTDate(new Date(value))} ${formatISTTime(new Date(value))}` : ''
 
     const headers = [
-      'Booking ID', 'Event Name', 'Event Type', 'Status',
+      'Booking ID', 'Event Name', 'Event Type', 'Guest Name', 'Status',
       'Date (IST)', 'Start Time (IST)', 'End Time (IST)', 'Duration (hours)',
       'Extra Time Before (min)', 'Extra Time After (min)', 'Participants',
       'Organizer Name', 'Organizer Email', 'Institute/Organization', 'Coordinator Phone',
       'External', 'External Services', 'Special Requirements', 'Description',
-      'Rejection/Cancellation Reason', 'Requested On (IST)', 'Approved On (IST)'
+      'Rejection/Cancellation Reason', 'Requested On (IST)', 'Approved On (IST)', 'Q Sheet'
     ]
 
     const rows = filteredBookings.map(booking => {
@@ -575,6 +582,7 @@ export default function AdminDashboard() {
         booking._id,
         booking.eventName,
         booking.eventType,
+        booking.guestName || '',
         booking.status,
         formatISTDate(start),
         formatISTTime(start),
@@ -593,7 +601,8 @@ export default function AdminDashboard() {
         booking.eventDescription || '',
         booking.rejectionReason || '',
         formatDateTime(booking.createdAt),
-        formatDateTime(booking.approvedAt)
+        formatDateTime(booking.approvedAt),
+        booking.qSheet?.fileName || ''
       ]
     })
 
@@ -1250,6 +1259,10 @@ export default function AdminDashboard() {
                   <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.eventType}</Typography>
                 </Box>
                 <Box>
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Guest Name</Typography>
+                  <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.guestName || 'N/A'}</Typography>
+                </Box>
+                <Box>
                   <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Organizer</Typography>
                   <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{actionDialog.booking.userName}</Typography>
                 </Box>
@@ -1340,6 +1353,28 @@ export default function AdminDashboard() {
                         <Chip label="Media/Photo Coverage" size="small" color="primary" />
                       )}
                     </Box>
+                  </Box>
+                )}
+
+                {/* Q Sheet uploaded by the organizer */}
+                {!actionDialog.booking.isBlockedSlot && (
+                  <Box sx={{ mt: 2, gridColumn: { xs: '1', sm: 'span 2' } }}>
+                    <Typography variant="body2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Q Sheet</Typography>
+                    {actionDialog.booking.qSheet ? (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        href={`/api/bookings/${actionDialog.booking._id}/qsheet`}
+                        sx={{ textTransform: 'none', maxWidth: '100%', justifyContent: 'flex-start' }}
+                      >
+                        <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {actionDialog.booking.qSheet.fileName} ({formatFileSize(actionDialog.booking.qSheet.size)}, uploaded {formatDate(actionDialog.booking.qSheet.uploadedAt)})
+                        </Box>
+                      </Button>
+                    ) : (
+                      <Typography variant="body1" color="textSecondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Not uploaded yet</Typography>
+                    )}
                   </Box>
                 )}
 
