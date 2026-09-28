@@ -49,7 +49,7 @@ import {
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QRVerification from '@/components/features/admin/QRVerification'
-import { toCsv, downloadCsv } from '@/lib/csv'
+import { toCsv, downloadCsv, hyperlink } from '@/lib/csv'
 import { formatISTDate, formatISTTime } from '@/lib/utils'
 import { formatFileSize } from '@/lib/qsheet'
 
@@ -567,7 +567,7 @@ export default function AdminDashboard() {
       'Extra Time Before (min)', 'Extra Time After (min)', 'Participants',
       'Organizer Name', 'Organizer Email', 'Institute/Organization', 'Coordinator Phone',
       'External', 'External Services', 'Special Requirements', 'Description',
-      'Rejection/Cancellation Reason', 'Requested On (IST)', 'Approved On (IST)', 'Q Sheet'
+      'Rejection/Cancellation Reason', 'Requested On (IST)', 'Approved On (IST)', 'Q Sheet', 'Q Sheet Download'
     ]
 
     const rows = filteredBookings.map(booking => {
@@ -602,7 +602,11 @@ export default function AdminDashboard() {
         booking.rejectionReason || '',
         formatDateTime(booking.createdAt),
         formatDateTime(booking.approvedAt),
-        booking.qSheet?.fileName || ''
+        booking.qSheet?.fileName || '',
+        // Opens in the browser; the admin must be signed in to download
+        booking.qSheet
+          ? hyperlink(`${window.location.origin}/api/bookings/${booking._id}/qsheet`, 'Download Q Sheet')
+          : ''
       ]
     })
 
